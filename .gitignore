@@ -34,3 +34,9 @@
 include/README
 lib/README
 test/README
+.vscode/settings.json
+.pioenvs/do-not-modify-files-here.url
+.pioenvs/structure.hash
+.vscode/c_cpp_properties.json
+.vscode/extensions.json
+.vscode/launch.json
