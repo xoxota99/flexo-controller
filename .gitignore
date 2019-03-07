@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+.DS_Store
+include/README
+lib/README
+test/README
