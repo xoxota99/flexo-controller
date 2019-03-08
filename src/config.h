@@ -21,7 +21,7 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include "flexo.h"
+#include "flexo.h" // for Arduino headers
 
 #define CPU_MAP_TEENSY_3_2 // What CPU pin mapping should we use?
 

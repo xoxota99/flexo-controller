@@ -1,5 +1,5 @@
 /*
-  flexo.h - main Flexo include file
+  commands.h - Abstraction layer for robot commands.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -18,28 +18,7 @@
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __FLEXO_H__
-#define __FLEXO_H__
-
-// Flexo versioning system
-#define FLEXO_VERSION "0.1a"
-#define FLEXO_VERSION_BUILD "20190307"
-
-// Define standard libraries used by Flexo.
-#include <Arduino.h>
-#include <AS5048A.h>
-#include <StepControl.h>
-
-// Define the Flexo system include files. NOTE: Do not alter organization.
-#include "config.h"
-#include "cpu_map.h"
-#include "servo.h"
-#include "joint.h"
-#include "ik_solver.h"
-#include "calibrate.h"
-#include "commands.h"
-#include "protocol.h"
-#include "shell.h"
-// ---------------------------------------------------------------------------------------
-
-#endif // __FLEXO_H__
+/**
+ * Command abstraction layer. Protocol handlers call commands, commands call joint functions.
+ * (possibly not necessary?)
+ **/

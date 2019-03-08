@@ -1,5 +1,5 @@
 /*
-  motor.h - Motor methods.
+  joint.h - Methods for commanding joints.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -21,8 +21,7 @@
 #ifndef __JOINT_H__
 #define __JOINT_H__
 
-// #include "config.h"
-#include "cpu_map.h"
+#include "flexo.h"
 
 typedef struct motorConfig_t
 {
