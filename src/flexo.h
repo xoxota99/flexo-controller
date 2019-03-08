@@ -1,5 +1,5 @@
 /*
-  config.h - compile-time configuration.
+  flexo.h - main Flexo include file
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -18,13 +18,23 @@
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef __FLEXO_H__
+#define __FLEXO_H__
 
-#include "flexo.h"
+// Flexo versioning system
+#define FLEXO_VERSION "0.1a"
+#define FLEXO_VERSION_BUILD "20190307"
 
-#define CPU_MAP_TEENSY_3_2 // What CPU pin mapping should we use?
+// Define standard libraries used by Flexo.
+#include <Arduino.h>
+#include <AS5048A.h>
+#include <StepControl.h>
 
-#define MOTOR_COUNT 6 // How many motors do we have?
+// Define the Flexo system include files. NOTE: Do not alter organization.
+#include "config.h"
+#include "cpu_map.h"
+#include "joint.h"
+#include "ik_solver.h"
+// ---------------------------------------------------------------------------------------
 
-#endif // __CONFIG_H__
+#endif // __FLEXO_H__
