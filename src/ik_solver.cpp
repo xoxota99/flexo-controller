@@ -1,4 +1,25 @@
+/*
+  ik_solver.cpp - Denavit-Hartenberg parameters for inverse kinematics.
+  Part of flexo-controller
+
+  Copyright (c) 2019 Phil Desrosiers
+
+  Flexo is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Flexo is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "ik_solver.h"
+
 ik_config_t dh_params[MOTOR_COUNT]{
     {.a = -89.978, .alpha = PI / 2, .d = -139.75, .theta = -PI},
     {.a = 0.0, .alpha = 0.0, .d = 0.0, .theta = -PI / 2},

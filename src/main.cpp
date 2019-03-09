@@ -1,5 +1,5 @@
 /*
-  joint.h - methods and configuration related to joint manipulation.
+  main.cpp - A controller for a 6DOF robot arm.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -17,6 +17,12 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/**
+ * The controller manages the execution state of the robot 
+ * (Calibration mode, interactive mode or binary mode), initializes 
+ * a command processor, and executes commands using the configured joints.
+ **/
 
 #include "flexo.h"
 

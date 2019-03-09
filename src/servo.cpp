@@ -1,5 +1,5 @@
 /*
-  commands.h - Abstraction layer for robot commands.
+  servo.h - An abstraction of the AS5048A encoders, and TeensyStepper controller, smooshed together and treated as a servo.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -17,8 +17,3 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-/**
- * Command abstraction layer. Protocol handlers call commands, commands call joint functions.
- * (possibly not necessary?)
- **/

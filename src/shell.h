@@ -20,5 +20,6 @@
 #ifndef __SHELL_H__
 #define __SHELL_H__
 #include "flexo.h"
+#include <Shell.h> //https://github.com/geekfactory/Shell
 
 #endif // __SHELL_H__
