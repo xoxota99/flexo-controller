@@ -1,5 +1,5 @@
 /*
-  commands.cpp - Abstraction layer for robot commands.
+  protocol.cpp - Stuff related to the client/controller binary protocol.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -17,3 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "endpoint.h"
+
+void setup_endpoint() {}
+void loop_endpoint() {}

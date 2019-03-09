@@ -1,5 +1,5 @@
 /*
-   stewy
+   Logger
    Copyright (C) 2018  Philippe Desrosiers
 
    This program is free software: you can redistribute it and/or modify
@@ -18,26 +18,17 @@
 
 #include "Logger.h"
 
-#define LOGGER_HANDLER(l, L)               \
-    void Logger::l##(const char *fmt, ...) \
-    {                                      \
-        if (L## >= Logger::level)          \
-        {                                  \
-            va_list args;                  \
-            va_start(args, fmt);           \
-            _log_va_list(L##, fmt, args);  \
-            va_end(args);                  \
-        }                                  \
-    }
-
 Logger::LogLevel Logger::level = TRACE;
 
 void Logger::_log_va_list(const LogLevel level, const char *fmt, va_list args)
 {
+    static const char *levelStrings[] = {
+        FOREACH_LEVEL(GENERATE_STRING)};
+
     char buffer[256];
     // va_start (args, fmt);
     vsprintf(buffer, fmt, args);
-    Serial.printf("[%s] - %s\n", lvlStrings[level], buffer);
+    Serial.printf("[%s] - %s\n", levelStrings[level], buffer);
     // va_end (args);
 }
 
@@ -52,9 +43,68 @@ void Logger::log(const LogLevel level, const char *fmt, ...)
     }
 }
 
-LOGGER_HANDLER(trace, TRACE)
-LOGGER_HANDLER(debug, DEBUG)
-LOGGER_HANDLER(info, INFO)
-LOGGER_HANDLER(warn, WARN)
-LOGGER_HANDLER(error, ERROR)
-LOGGER_HANDLER(fatal, FATAL)
+void Logger::trace(const char *fmt, ...)
+{
+    if (TRACE >= Logger::level)
+    {
+        va_list args;
+        va_start(args, fmt);
+        _log_va_list(TRACE, fmt, args);
+        va_end(args);
+    }
+}
+
+void Logger::debug(const char *fmt, ...)
+{
+    if (DEBUG >= Logger::level)
+    {
+        va_list args;
+        va_start(args, fmt);
+        _log_va_list(DEBUG, fmt, args);
+        va_end(args);
+    }
+}
+
+void Logger::info(const char *fmt, ...)
+{
+    if (INFO >= Logger::level)
+    {
+        va_list args;
+        va_start(args, fmt);
+        _log_va_list(INFO, fmt, args);
+        va_end(args);
+    }
+}
+
+void Logger::warn(const char *fmt, ...)
+{
+    if (WARN >= Logger::level)
+    {
+        va_list args;
+        va_start(args, fmt);
+        _log_va_list(WARN, fmt, args);
+        va_end(args);
+    }
+}
+
+void Logger::error(const char *fmt, ...)
+{
+    if (ERROR >= Logger::level)
+    {
+        va_list args;
+        va_start(args, fmt);
+        _log_va_list(ERROR, fmt, args);
+        va_end(args);
+    }
+}
+
+void Logger::fatal(const char *fmt, ...)
+{
+    if (FATAL >= Logger::level)
+    {
+        va_list args;
+        va_start(args, fmt);
+        _log_va_list(FATAL, fmt, args);
+        va_end(args);
+    }
+}

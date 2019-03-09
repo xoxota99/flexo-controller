@@ -26,54 +26,34 @@
 
 #include "flexo.h"
 
-#define ENC_SCALE 0x3fff
-#define STEPSILON 10
-
 // this is the magic trick for printf to support float
 asm(".global _printf_float");
 // this is the magic trick for scanf to support float
 asm(".global _scanf_float");
 
-Stepper *motors[MOTOR_COUNT] = {
-    new Stepper(PIN_STEP_1, PIN_DIR_1),
-    new Stepper(PIN_STEP_2, PIN_DIR_2),
-    new Stepper(PIN_STEP_3, PIN_DIR_3),
-    new Stepper(PIN_STEP_4, PIN_DIR_4),
-    new Stepper(PIN_STEP_5, PIN_DIR_5),
-    new Stepper(PIN_STEP_6, PIN_DIR_6),
-};
+const char *shellModeNames[] = {
+    FOREACH_SHELLMODE(GENERATE_STRING)};
 
-StepControl<> controller;
-
-void setup_motors()
-{
-  for (int i = 0; i < MOTOR_COUNT; i++)
-  {
-    motors[i]->setAcceleration(kMotorConfig[i].acceleration);
-    motors[i]->setInverseRotation(kMotorConfig[i].inverseRotation);
-    motors[i]->setMaxSpeed(kMotorConfig[i].maxSpeed);
-    motors[i]->setPullInSpeed(kMotorConfig[i].pullInFreq);
-    motors[i]->setStepPinPolarity(kMotorConfig[i].stepPinPolarity);
-  }
-}
-
-void loop_motors()
-{
-}
+shellMode_t shellMode = INTERACTIVE;
 
 void setup()
 {
 
   while (!Serial && millis() < 1000)
     ;
-
+    
+  setup_uptime();
   setup_motors();
+
+  setup_endpoint();
+  setup_shell();
 }
 
 void loop()
 {
-  // delay(10);
-
+  loop_uptime();
   loop_motors();
-  // Serial.printf("%d\t%d\n", motors[0]->getPosition(), angleSensor[0]->getRawRotation());
+
+  loop_endpoint();
+  loop_shell();
 }

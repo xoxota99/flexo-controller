@@ -23,7 +23,6 @@
 
 // Flexo versioning system
 #define FLEXO_VERSION "0.1a"
-#define FLEXO_VERSION_BUILD "20190307"
 
 // Define standard libraries used by Flexo.
 #include <Arduino.h>
@@ -32,13 +31,14 @@
 
 // Define the Flexo system include files. NOTE: Do not alter organization.
 #include "config.h"
+#include "uptime.h"
+#include "reset.h"
+#include "Logger.h"
 #include "cpu_map.h"
 #include "servo.h"
 #include "joint.h"
 #include "ik_solver.h"
-#include "calibrate.h"
-#include "commands.h"
-#include "protocol.h"
+#include "endpoint.h"
 #include "shell.h"
 // ---------------------------------------------------------------------------------------
 

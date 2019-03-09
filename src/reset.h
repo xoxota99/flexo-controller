@@ -1,5 +1,5 @@
 /*
-  calibrate.h - Stuff related to zeroing / calibration of the robot.
+  reset.h - reset macros.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -17,3 +17,19 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
+#ifndef __RESET_H__
+#define __RESET_H__
+
+#ifdef CORE_TEENSY
+//Software reset macros / MMap FOR TEENSY ONLY
+#define CPU_RESTART_VAL 0x5FA0004                         // write this magic number...
+#define CPU_RESTART_ADDR (uint32_t *)0xE000ED0C           // to this memory location...
+#define CPU_RESTART (*CPU_RESTART_ADDR = CPU_RESTART_VAL) // presto!
+
+#else
+
+#define CPU_RESTART asm volatile("  jmp 0") // close enough for arduino
+
+#endif
+
+#endif

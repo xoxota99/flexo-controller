@@ -31,12 +31,48 @@ typedef struct ik_config_t
   double theta;
 } ik_config_t;
 
-extern ik_config_t dh_params[MOTOR_COUNT];
+const ik_config_t dh_params[MOTOR_COUNT]{
+    {a : -89.978,
+     alpha : PI / 2,
+     d : -139.75,
+     theta : -PI},
 
-//Translate / rotate the tool origin to the given location in the o0 coordinate frame
-void moveTo(double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta);
+    {a : 0.0,
+     alpha : 0.0,
+     d : 0.0,
+     theta : -PI / 2},
+
+    {a : 66.125,
+     alpha : PI / 2,
+     d : 0.0,
+     theta : 0.0},
+
+    {a : 0.0,
+     alpha : -PI / 2,
+     d : 342.472,
+     theta : 0.0},
+
+    {a : 0.0,
+     alpha : -PI / 2,
+     d : 0.0,
+     theta : 0.0},
+
+    {a : 0.0,
+     alpha : PI,
+     d : -47.425,
+     theta : PI}};
+
+/** 
+ * Translate / rotate the tool origin to the given location in the o0 coordinate frame. 
+ * Solution is returned as an array of doubles, representing the rotation (in radians) 
+ * of each joint in the IK chain.
+ **/
+void moveTo(double *solution, double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta);
 
 //Translate the tool origin (with no rotation) to the given location in the o0 coordinate frame
-void moveTo(double x_pos, double y_pos, double z_pos);
+void translate(double *solution, double x_pos, double y_pos, double z_pos);
+
+//Rotate the tool around the tool origin (with no translation).
+void rotate(double *solution, double roll_theta, double pitch_theta, double yaw_theta);
 
 #endif // __IK_SOLVER_H__

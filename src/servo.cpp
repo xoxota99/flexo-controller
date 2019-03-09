@@ -17,3 +17,32 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include "servo.h"
+
+Stepper *motors[MOTOR_COUNT] = {
+    new Stepper(PIN_STEP_1, PIN_DIR_1),
+    new Stepper(PIN_STEP_2, PIN_DIR_2),
+    new Stepper(PIN_STEP_3, PIN_DIR_3),
+    new Stepper(PIN_STEP_4, PIN_DIR_4),
+    new Stepper(PIN_STEP_5, PIN_DIR_5),
+    new Stepper(PIN_STEP_6, PIN_DIR_6),
+};
+
+StepControl<> controller;
+
+void setup_motors()
+{
+  for (int i = 0; i < MOTOR_COUNT; i++)
+  {
+    motors[i]->setAcceleration(motorConfig[i].acceleration);
+    motors[i]->setInverseRotation(motorConfig[i].inverseRotation);
+    motors[i]->setMaxSpeed(motorConfig[i].maxSpeed);
+    motors[i]->setPullInSpeed(motorConfig[i].pullInFreq);
+    motors[i]->setStepPinPolarity(motorConfig[i].stepPinPolarity);
+  }
+}
+
+void loop_motors()
+{
+}

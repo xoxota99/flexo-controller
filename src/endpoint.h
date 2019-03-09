@@ -1,5 +1,5 @@
 /*
-  commands.h - Abstraction layer for robot commands.
+  protocol.h - Stuff related to the client/controller binary protocol.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -18,7 +18,15 @@
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __ENDPOINT_H__
+#define __ENDPOINT_H__
+
+#include "flexo.h"
 /**
- * Command abstraction layer. Protocol handlers call commands, commands call joint functions.
- * (possibly not necessary?)
+ * This is the binary equivalent of shell.h. Provides an interface (over UART) that processes and executes commands from the client application.
  **/
+
+void setup_endpoint();
+void loop_endpoint();
+
+#endif //__ENDPOINT_H__
