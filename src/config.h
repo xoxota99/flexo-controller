@@ -75,7 +75,7 @@ typedef struct jointConfig_t
   float gearRatio; // joints can have a gear ratio, separate from the motor's gearbox.
   int32_t minPosition;
   int32_t maxPosition;
-  int32_t zeroPosition;
+  int32_t homePosition;
 } jointConfig_t;
 
 typedef struct motorConfig_t

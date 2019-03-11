@@ -75,6 +75,6 @@ const command_t commands[] = {
     {handleLog, "log", "Change logging level."},
     {handleStatus, "status", "Dump system information"},
     {handleReset, "reset", "Reset controller"},
-    {handleSet, "set", "Set a joint minimum / maximum / zero point"}};
+    {handleSet, "set", "Set a joint minimum / maximum / home position"}};
 
 #endif // __SHELL_H__

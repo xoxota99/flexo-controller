@@ -24,27 +24,27 @@ jointConfig_t jointConfig[] = {
     {gearRatio : 0.25f, //20:80
      minPosition : -50,
      maxPosition : 50,
-     zeroPosition : 0},
+     homePosition : 0},
     {gearRatio : 0.02127659574f, //1:47
      minPosition : -50,
      maxPosition : 50,
-     zeroPosition : 0},
+     homePosition : 0},
     {gearRatio : 0.02127659574f, //1:47
      minPosition : -50,
      maxPosition : 50,
-     zeroPosition : 0},
+     homePosition : 0},
     {gearRatio : 0.266666666667f, //16:60
      minPosition : -50,
      maxPosition : 50,
-     zeroPosition : 0},
+     homePosition : 0},
     {gearRatio : 0.6f, //30:50
      minPosition : -50,
      maxPosition : 50,
-     zeroPosition : 0},
+     homePosition : 0},
     {gearRatio : 1.0, // 1:1
      minPosition : -50,
      maxPosition : 50,
-     zeroPosition : 0},
+     homePosition : 0},
 };
 
 motorConfig_t motorConfig[] = {
