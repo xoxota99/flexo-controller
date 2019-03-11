@@ -41,7 +41,7 @@ void setup()
 
   while (!Serial && millis() < 1000)
     ;
-    
+
   setup_uptime();
   setup_motors();
 

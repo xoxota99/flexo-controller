@@ -20,4 +20,20 @@
 #include "endpoint.h"
 
 void setup_endpoint() {}
-void loop_endpoint() {}
+void loop_endpoint()
+{
+    if (shellMode == BINARY)
+    {
+        if (Serial.available())
+        {
+            //there are bytes.
+            header_t msgHead;
+            //STEP 1: Read the message header, to figure out how to load the message.
+            //STEP 2: Load the message. Calculate the CRC.
+            //STEP 3: Read the message footer, compare the CRC.
+            //STEP 4: ACK.
+            //STEP 5: Process the command (Asynchronously?)
+            //STEP 6: construct and send a response.
+        }
+    }
+}

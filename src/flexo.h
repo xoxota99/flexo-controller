@@ -38,8 +38,9 @@
 #include "servo.h"
 #include "joint.h"
 #include "ik_solver.h"
-#include "endpoint.h"
 #include "shell.h"
+#include "protocol.h"
+#include "endpoint.h"
 // ---------------------------------------------------------------------------------------
 
 #endif // __FLEXO_H__

@@ -46,12 +46,12 @@ usage: set <extent> [<joint #>]\n \
 \t\t - zero : The zero position of the joint.\n\n \
 Example : \"set 3 min\" - Set the minimum extent of joint #3 to its current position."
 
-typedef struct Command
+typedef struct command_t
 {
   shell_program_t shell_program;
   const char *shell_command_string;
   const char *shell_help_string;
-} Command;
+} command_t;
 
 void setup_shell(int bps = SERIAL_BAUD);
 void loop_shell();
@@ -68,7 +68,7 @@ int handleReset(int argc, char **argv);  // Reset arduino
 
 //===
 
-const Command commands[] = {
+const command_t commands[] = {
     {handleHelp, "?", "This message."},
     {handleHelp, "help", "This message."},
     {handleMove, "move", "Move a joint by/to a specific angle in degrees (relative or absolute movement)"},

@@ -23,51 +23,15 @@
 
 #include "flexo.h"
 
-typedef struct jointConfig_t
-{
-  float gearRatio; // joints can have a gear ratio, separate from the motor's gearbox.
-  int32_t minPosition;
-  int32_t maxPosition;
-  int32_t zeroPosition;
-} jointConfig_t;
-
-extern jointConfig_t jointConfig[];
-
-typedef struct motorConfig_t
-{
-  unsigned int acceleration;
-  bool inverseRotation;
-  int maxSpeed;
-  unsigned int pullInFreq;
-  int stepPinPolarity;
-  float gearRatio; // Motors can have their own gear ratio / gearbox
-  byte dirPin;
-  byte stepPin;
-  byte csPin;
-  unsigned int stepsPerRev;
-  bool unsafeStartup;
-} motorConfig_t;
-
 extern motorConfig_t motorConfig[];
-
-enum Direction
-{
-  CW = HIGH,
-  CCW = LOW
-};
-
-enum MovementMode
-{
-  ABSOLUTE,
-  RELATIVE
-};
+extern jointConfig_t jointConfig[];
 
 /**
 * Jog a given joint by a given angle (in radians), in the given direction. Movement may be relative or absolute.
 *
 * Return: True if the momvent was successful. False if the movement was not successful.
 **/
-bool jog(motorConfig_t motor, double theta, Direction dir, MovementMode movementMode);
+bool jog(motorConfig_t motor, double theta, movementMode_t movementMode);
 
 /**
  * Return the current position (in radians) of the given motor, relative to the zero point for that motor.

@@ -42,4 +42,35 @@ enum shellMode_t
 
 extern const char *shellModeNames[];
 extern shellMode_t shellMode;
+
+//These types should be defined in joint.h, but when I move them there, the compiler freaks out (because they're also used in protocol.h)
+typedef struct jointConfig_t
+{
+  float gearRatio; // joints can have a gear ratio, separate from the motor's gearbox.
+  int32_t minPosition;
+  int32_t maxPosition;
+  int32_t zeroPosition;
+} jointConfig_t;
+
+typedef struct motorConfig_t
+{
+  unsigned int acceleration;
+  bool inverseRotation;
+  int maxSpeed;
+  unsigned int pullInFreq;
+  int stepPinPolarity;
+  float gearRatio; // Motors can have their own gear ratio / gearbox
+  byte dirPin;
+  byte stepPin;
+  byte csPin;
+  unsigned int stepsPerRev;
+  bool unsafeStartup;
+} motorConfig_t;
+
+enum movementMode_t
+{
+  ABSOLUTE,
+  RELATIVE
+};
+
 #endif // __CONFIG_H__

@@ -120,7 +120,7 @@ motorConfig_t motorConfig[] = {
 *
 * Return: True if the momvent was successful. False if the movement was not successful.
 **/
-bool jog(motorConfig_t motor, double theta, Direction dir, MovementMode movementMode)
+bool jog(motorConfig_t motor, double theta, movementMode_t movementMode)
 {
   return false;
 }
