@@ -159,9 +159,9 @@ int handleMove(int argc, char **argv)
   }
   else
   {
-    if (systemMode == RUNNING)
+    if (systemState == RUNNING)
     {
-      switch (moveMode)
+      switch (moveState)
       {
       case MOVING:
         Serial.println("Movement aborted. Robot is already moving.");
@@ -172,18 +172,18 @@ int handleMove(int argc, char **argv)
         {
           String token(argv[i + 1]);
           float theta = token.toFloat();
-          float steps = (double)motorConfig[i].stepsPerRev / motorConfig[i].gearRatio / jointConfig[i].gearRatio * theta / TWO_PI;
+          float steps = (double)jointConfig[i].stepsPerRev / jointConfig[i].gearRatio * theta / TWO_PI;
           //convert absolute radians to relative steps
           motors[i]->setTargetAbs(steps);
         }
-        moveMode = MOVING;
+        moveState = MOVING;
         controller.moveAsync(motors);
         break;
       }
     }
     else
     {
-      Serial.printf("Movement aborted. System is in state: %s\n", systemModeNames[systemMode]);
+      Serial.printf("Movement aborted. System is in state: %s\n", systemStateNames[systemState]);
       return SHELL_RET_FAILURE;
     }
   }
@@ -203,9 +203,9 @@ int handleJog(int argc, char **argv)
   else
   {
 
-    if (systemMode == RUNNING)
+    if (systemState == RUNNING)
     {
-      switch (moveMode)
+      switch (moveState)
       {
       case MOVING:
         Serial.println("Movement aborted. Robot is already moving.");
@@ -246,7 +246,7 @@ int handleJog(int argc, char **argv)
           }
         }
         motors[jointNum]->setTargetRel(steps);
-        moveMode = MOVING;
+        moveState = MOVING;
         controller.moveAsync(motors);
 
         break;
@@ -254,7 +254,7 @@ int handleJog(int argc, char **argv)
     }
     else
     {
-      Serial.printf("Movement aborted. System is in state: %s\n", systemModeNames[systemMode]);
+      Serial.printf("Movement aborted. System is in state: %s\n", systemStateNames[systemState]);
       return SHELL_RET_FAILURE;
     }
   }
@@ -271,17 +271,17 @@ void dumpJoint(int i)
   double pos = motors[i]->getPosition();
   Serial.printf("\tposition: %.2f%s\n", pos, (pos < jointConfig[i].minPosition ? " [ < MIN ]" : (pos > jointConfig[i].maxPosition ? " [ > MAX ]" : "")));
   Serial.printf("\tMotor config:\n");
-  Serial.printf("\t\tacceleration: %d\n", motorConfig[i].acceleration);
-  Serial.printf("\t\tinverseRotation: %s\n", motorConfig[i].inverseRotation ? "true" : "false");
-  Serial.printf("\t\tmaxSpeed: %d\n", motorConfig[i].maxSpeed);
-  Serial.printf("\t\tpullInFreq: %d\n", motorConfig[i].pullInFreq);
-  Serial.printf("\t\tstepPinPolarity: %d\n", motorConfig[i].stepPinPolarity);
-  Serial.printf("\t\tgearRatio: %.2f\n", motorConfig[i].gearRatio);
-  Serial.printf("\t\tdirPin: %d\n", motorConfig[i].dirPin);
-  Serial.printf("\t\tstepPin: %d\n", motorConfig[i].stepPin);
-  Serial.printf("\t\tcsPin: %d\n", motorConfig[i].csPin);
-  Serial.printf("\t\tstepsPerRev: %d\n", motorConfig[i].stepsPerRev);
-  Serial.printf("\t\tunsafeStartup: %s\n", motorConfig[i].unsafeStartup ? "true" : "false");
+  Serial.printf("\t\tacceleration: %d\n", jointConfig[i].acceleration);
+  Serial.printf("\t\tinverseRotation: %s\n", jointConfig[i].inverseRotation ? "true" : "false");
+  Serial.printf("\t\tmaxSpeed: %d\n", jointConfig[i].maxSpeed);
+  Serial.printf("\t\tpullInFreq: %d\n", jointConfig[i].pullInFreq);
+  Serial.printf("\t\tstepPinPolarity: %d\n", jointConfig[i].stepPinPolarity);
+  Serial.printf("\t\tgearRatio: %.2f\n", jointConfig[i].gearRatio);
+  Serial.printf("\t\tdirPin: %d\n", jointConfig[i].dirPin);
+  Serial.printf("\t\tstepPin: %d\n", jointConfig[i].stepPin);
+  Serial.printf("\t\tcsPin: %d\n", jointConfig[i].csPin);
+  Serial.printf("\t\tstepsPerRev: %d\n", jointConfig[i].stepsPerRev);
+  Serial.printf("\t\tunsafeStartup: %s\n", jointConfig[i].unsafeStartup ? "true" : "false");
 }
 
 /**

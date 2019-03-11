@@ -35,7 +35,6 @@
 #include "reset.h"
 #include "Logger.h"
 #include "cpu_map.h"
-#include "servo.h"
 #include "joint.h"
 #include "ik_solver.h"
 #include "shell.h"

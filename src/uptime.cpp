@@ -20,16 +20,15 @@
 
 #include "uptime.h"
 
-elapsed_t elapsed_time;
-
 String uptime()
 {
+    elapsed_t elapsed_time = elapse(millis());
     String retval;
     char buf[50];
 
     if (elapsed_time.years > 0)
     {
-        sprintf(buf, "%llu year%s, ", elapsed_time.years, elapsed_time.years != 1 ? "s" : "");
+        sprintf(buf, "%d year%s, ", elapsed_time.years, elapsed_time.years != 1 ? "s" : "");
         retval.append(buf);
     }
     if (elapsed_time.days > 0)
@@ -48,45 +47,32 @@ String uptime()
     return retval;
 }
 
-void setup_uptime()
+elapsed_t elapse(uint32_t millis)
 {
-    elapsed_time = {
-        millis : 0,
-        seconds : 0,
-        minutes : 0,
-        hours : 0,
-        days : 0,
-        years : 0
-    };
-}
+    long m = millis;
+    elapsed_t retval;
 
-void loop_uptime()
-{
-    static uint32_t m = 0;
-    uint32_t t = millis();
-    if (t - m >= MILLIS_PER_SECOND)
-    {
-        m = t - MILLIS_PER_SECOND;
-        elapsed_time.seconds++;
-        if (elapsed_time.seconds >= SECONDS_PER_MINUTE)
-        {
-            elapsed_time.minutes++;
-            elapsed_time.seconds = 0;
-            if (elapsed_time.minutes >= MINUTES_PER_HOUR)
-            {
-                elapsed_time.hours++;
-                elapsed_time.minutes = 0;
-                if (elapsed_time.hours >= HOURS_PER_DAY)
-                {
-                    elapsed_time.days++;
-                    elapsed_time.hours = 0;
-                    if (elapsed_time.days >= DAYS_PER_YEAR)
-                    {
-                        elapsed_time.years++;
-                        elapsed_time.days = 0;
-                    }
-                }
-            }
-        }
-    }
+    retval.years = m / MILLIS_PER_YEAR;
+    m -= MILLIS_PER_YEAR;
+    m = max(0, m);
+
+    retval.days = m / MILLIS_PER_DAY;
+    m -= MILLIS_PER_DAY;
+    m = max(0, m);
+
+    retval.hours = m / MILLIS_PER_HOUR;
+    m -= MILLIS_PER_HOUR;
+    m = max(0, m);
+
+    retval.minutes = m / MILLIS_PER_MINUTE;
+    m -= MILLIS_PER_MINUTE;
+    m = max(0, m);
+
+    retval.seconds = m / MILLIS_PER_SECOND;
+    m -= MILLIS_PER_SECOND;
+    m = max(0, m);
+
+    retval.millis = m;
+
+    return retval;
 }

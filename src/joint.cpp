@@ -20,46 +20,36 @@
 
 #include "joint.h"
 
-jointConfig_t jointConfig[] = {
-    {gearRatio : 0.25f, //20:80
-     minPosition : -50,
-     maxPosition : 50,
-     homePosition : 0},
-    {gearRatio : 0.02127659574f, //1:47
-     minPosition : -50,
-     maxPosition : 50,
-     homePosition : 0},
-    {gearRatio : 0.02127659574f, //1:47
-     minPosition : -50,
-     maxPosition : 50,
-     homePosition : 0},
-    {gearRatio : 0.266666666667f, //16:60
-     minPosition : -50,
-     maxPosition : 50,
-     homePosition : 0},
-    {gearRatio : 0.6f, //30:50
-     minPosition : -50,
-     maxPosition : 50,
-     homePosition : 0},
-    {gearRatio : 1.0, // 1:1
-     minPosition : -50,
-     maxPosition : 50,
-     homePosition : 0},
+Stepper *motors[MOTOR_COUNT] = {
+    new Stepper(PIN_STEP_1, PIN_DIR_1),
+    new Stepper(PIN_STEP_2, PIN_DIR_2),
+    new Stepper(PIN_STEP_3, PIN_DIR_3),
+    new Stepper(PIN_STEP_4, PIN_DIR_4),
+    new Stepper(PIN_STEP_5, PIN_DIR_5),
+    new Stepper(PIN_STEP_6, PIN_DIR_6),
 };
 
-motorConfig_t motorConfig[] = {
-    {acceleration : 50000,
+StepControl<> controller;
+
+jointConfig_t jointConfig[] = {
+    {minPosition : -50,
+     maxPosition : 50,
+     homePosition : 0,
+     acceleration : 50000,
      inverseRotation : true,
      maxSpeed : 15000,
      pullInFreq : 100,
      stepPinPolarity : HIGH,
-     gearRatio : 1.0f,
+     gearRatio : 0.25f, //20:80
      dirPin : PIN_DIR_1,
      stepPin : PIN_STEP_1,
      csPin : PIN_CS_1,
      stepsPerRev : 1600,
      unsafeStartup : false},
-    {acceleration : 50000,
+    {minPosition : -50,
+     maxPosition : 50,
+     homePosition : 0,
+     acceleration : 50000,
      inverseRotation : true,
      maxSpeed : 15000,
      pullInFreq : 100,
@@ -70,7 +60,10 @@ motorConfig_t motorConfig[] = {
      csPin : PIN_CS_2,
      stepsPerRev : 1600,
      unsafeStartup : false},
-    {acceleration : 50000,
+    {minPosition : -50,
+     maxPosition : 50,
+     homePosition : 0,
+     acceleration : 50000,
      inverseRotation : true,
      maxSpeed : 15000,
      pullInFreq : 100,
@@ -81,29 +74,38 @@ motorConfig_t motorConfig[] = {
      csPin : PIN_CS_3,
      stepsPerRev : 1600,
      unsafeStartup : false},
-    {acceleration : 50000,
+    {minPosition : -50,
+     maxPosition : 50,
+     homePosition : 0,
+     acceleration : 50000,
      inverseRotation : true,
      maxSpeed : 15000,
      pullInFreq : 100,
      stepPinPolarity : HIGH,
-     gearRatio : 1.0f,
+     gearRatio : 0.266666666667f, //16:60
      dirPin : PIN_DIR_4,
      stepPin : PIN_STEP_4,
      csPin : PIN_CS_4,
      stepsPerRev : 1600,
      unsafeStartup : false},
-    {acceleration : 50000,
+    {minPosition : -50,
+     maxPosition : 50,
+     homePosition : 0,
+     acceleration : 50000,
      inverseRotation : true,
      maxSpeed : 15000,
      pullInFreq : 100,
      stepPinPolarity : HIGH,
-     gearRatio : 1.0f,
+     gearRatio : 0.6f, //30:50
      dirPin : PIN_DIR_5,
      stepPin : PIN_STEP_5,
      csPin : PIN_CS_5,
      stepsPerRev : 1600,
      unsafeStartup : false},
-    {acceleration : 50000,
+    {minPosition : -50,
+     maxPosition : 50,
+     homePosition : 0,
+     acceleration : 50000,
      inverseRotation : true,
      maxSpeed : 15000,
      pullInFreq : 100,
@@ -120,8 +122,41 @@ motorConfig_t motorConfig[] = {
 *
 * Return: True if the momvent was successful. False if the movement was not successful.
 **/
-bool jog(motorConfig_t motor, double theta, movementMode_t movementMode)
+bool jog(int idx, double theta, movementMode_t moveMode)
 {
+  if (systemState == RUNNING)
+  {
+    if (moveState == STOPPED)
+    {
+      int steps_per_rad = (int)((double)jointConfig[idx].stepsPerRev / jointConfig[idx].gearRatio / TWO_PI);
+      int steps = steps_per_rad * theta;
+
+      Logger::trace("Steps_per_rad=%d", steps_per_rad);
+
+      switch (moveMode)
+      {
+      case ABSOLUTE:
+        //convert to relative. What is our current position?
+        // int pos = motors[idx]->getPosition();
+        // steps = steps - pos;
+        motors[idx]->setTargetAbs(steps);
+        break;
+      case RELATIVE:
+      default:
+        motors[idx]->setTargetRel(steps);
+      }
+
+      controller.moveAsync(*(motors[idx]));
+      return true;
+    }
+    else
+    {
+      Logger::error("Movement aborted: Robot is already moving!");
+    }
+  }
+  else
+  { //systemState!=RUNNING
+  }
   return false;
 }
 
@@ -129,3 +164,35 @@ bool jog(motorConfig_t motor, double theta, movementMode_t movementMode)
  * Return the current position (in radians) of the given motor, relative to the zero point for that motor.
  **/
 double getTheta(int motorId) { return 0.0; }
+
+void setup_motors()
+{
+  for (int i = 0; i < MOTOR_COUNT; i++)
+  {
+    motors[i]->setAcceleration(jointConfig[i].acceleration);
+    motors[i]->setInverseRotation(jointConfig[i].inverseRotation);
+    motors[i]->setMaxSpeed(jointConfig[i].maxSpeed);
+    motors[i]->setPullInSpeed(jointConfig[i].pullInFreq);
+    motors[i]->setStepPinPolarity(jointConfig[i].stepPinPolarity);
+  }
+}
+
+void loop_motors()
+{
+  switch (moveState)
+  {
+  case MOVING:
+    if (!controller.isRunning())
+    {
+      moveState = STOPPED;
+    }
+    break;
+  case STOPPED:
+    if (controller.isRunning())
+    {
+      moveState = MOVING;
+      Logger::warn("Motors are moving, but moveState was STOPPED. Something set the motors moving without updating state.");
+    }
+    break;
+  }
+}

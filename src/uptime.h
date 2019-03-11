@@ -23,25 +23,22 @@
 #include "flexo.h"
 
 #define MILLIS_PER_SECOND 1000
-#define SECONDS_PER_MINUTE 60
-#define MINUTES_PER_HOUR 60
-#define HOURS_PER_DAY 24
-#define DAYS_PER_YEAR 365 //TODO: Leap years?
+#define MILLIS_PER_MINUTE 60000
+#define MILLIS_PER_HOUR 3600000
+#define MILLIS_PER_DAY 86400000L
+#define MILLIS_PER_YEAR 22896000000L //TODO: Leap years?
 
 typedef struct elapsed_t
 {
-  uint16_t millis; // milliseconds from 0 to 1000
-  uint8_t seconds; // seconds of minutes from 0 to 61
-  uint8_t minutes; // minutes of hour from 0 to 59
-  uint8_t hours;   // hours of day from 0 to 24
-  uint16_t days;   // day of year from 0 to 365
-  uint64_t years;  // years elapsed
+  int millis;  // milliseconds from 0 to 1000
+  int seconds; // seconds of minutes from 0 to 61
+  int minutes; // minutes of hour from 0 to 59
+  int hours;   // hours of day from 0 to 24
+  int days;    // day of year from 0 to 365
+  int years;   // years elapsed
 } elapsed_t;
 
-extern elapsed_t elapsed_time;
-
+elapsed_t elapse(uint32_t millis);
 String uptime();
-void setup_uptime();
-void loop_uptime();
 
 #endif // __UPTIME_H__

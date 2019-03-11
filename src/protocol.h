@@ -71,13 +71,13 @@ typedef struct req_set_t
 {
     int index; // which joint are we configuring?
     jointConfig_t jointConfig;
-    motorConfig_t motorConfig;
+    // motorConfig_t motorConfig;
 } req_set_t;
 
 typedef struct res_pose_t
 {
-    system_mode_t systemMode;
-    move_mode_t moveMode;
+    system_state_t systemMode;
+    move_state_t moveMode;
     double theta[MOTOR_COUNT];
 } res_pose_t;
 

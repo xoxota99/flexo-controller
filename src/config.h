@@ -32,14 +32,14 @@
   MODE(BINARY)                  \
   MODE(INTERACTIVE)
 
-#define FOREACH_MOVEMODE(MODE) \
-  MODE(STOPPED)                \
+#define FOREACH_MOVESTATE(MODE) \
+  MODE(STOPPED)                 \
   MODE(MOVING)
 
-#define FOREACH_SYSTEMMODE(MODE) \
-  MODE(STARTUP)                  \
-  MODE(UNCALIBRATED)             \
-  MODE(RUNNING)                  \
+#define FOREACH_SYSTEMSTATE(MODE) \
+  MODE(STARTUP)                   \
+  MODE(UNCALIBRATED)              \
+  MODE(RUNNING)                   \
   MODE(SHUTDOWN)
 
 #define GENERATE_ENUM(ENUM) ENUM,
@@ -50,36 +50,36 @@ enum shellMode_t
   FOREACH_SHELLMODE(GENERATE_ENUM)
 };
 
-enum move_mode_t
+enum move_state_t
 {
-  FOREACH_MOVEMODE(GENERATE_ENUM)
+  FOREACH_MOVESTATE(GENERATE_ENUM)
 };
 
-enum system_mode_t
+enum system_state_t
 {
-  FOREACH_SYSTEMMODE(GENERATE_ENUM)
+  FOREACH_SYSTEMSTATE(GENERATE_ENUM)
 };
 
 extern const char *shellModeNames[];
 extern shellMode_t shellMode;
 
-extern const char *moveModeNames[];
-extern move_mode_t moveMode;
+extern const char *moveStateNames[];
+extern move_state_t moveState;
 
-extern const char *systemModeNames[];
-extern system_mode_t systemMode;
+extern const char *systemStateNames[];
+extern system_state_t systemState;
 
 //These types should be defined in joint.h, but when I move them there, the compiler freaks out (because they're also used in protocol.h)
 typedef struct jointConfig_t
 {
-  float gearRatio; // joints can have a gear ratio, separate from the motor's gearbox.
+  // float gearRatio; // joints can have a gear ratio, separate from the motor's gearbox.
   int32_t minPosition;
   int32_t maxPosition;
   int32_t homePosition;
-} jointConfig_t;
+  // } jointConfig_t;
 
-typedef struct motorConfig_t
-{
+  // typedef struct motorConfig_t
+  // {
   unsigned int acceleration;
   bool inverseRotation;
   int maxSpeed;
@@ -91,7 +91,8 @@ typedef struct motorConfig_t
   byte csPin;
   unsigned int stepsPerRev;
   bool unsafeStartup;
-} motorConfig_t;
+  // } motorConfig_t;
+} jointConfig_t;
 
 enum movementMode_t
 {

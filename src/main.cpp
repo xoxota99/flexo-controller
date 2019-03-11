@@ -36,15 +36,15 @@ const char *shellModeNames[] = {
 
 shellMode_t shellMode = INTERACTIVE;
 
-const char *moveModeNames[] = {
-    FOREACH_MOVEMODE(GENERATE_STRING)};
+const char *moveStateNames[] = {
+    FOREACH_MOVESTATE(GENERATE_STRING)};
 
-move_mode_t moveMode = STOPPED;
+move_state_t moveState = STOPPED;
 
-const char *systemModeNames[] = {
-    FOREACH_SYSTEMMODE(GENERATE_STRING)};
+const char *systemStateNames[] = {
+    FOREACH_SYSTEMSTATE(GENERATE_STRING)};
 
-system_mode_t systemMode = STARTUP;
+system_state_t systemState = STARTUP;
 
 void setup()
 {
@@ -52,7 +52,6 @@ void setup()
   while (!Serial && millis() < 1000)
     ;
 
-  setup_uptime();
   setup_motors();
 
   setup_endpoint();
@@ -61,7 +60,6 @@ void setup()
 
 void loop()
 {
-  loop_uptime();
   loop_motors();
 
   loop_endpoint();
