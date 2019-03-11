@@ -36,6 +36,16 @@ const char *shellModeNames[] = {
 
 shellMode_t shellMode = INTERACTIVE;
 
+const char *moveModeNames[] = {
+    FOREACH_MOVEMODE(GENERATE_STRING)};
+
+move_mode_t moveMode = STOPPED;
+
+const char *systemModeNames[] = {
+    FOREACH_SYSTEMMODE(GENERATE_STRING)};
+
+system_mode_t systemMode = STARTUP;
+
 void setup()
 {
 

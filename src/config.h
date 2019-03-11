@@ -32,6 +32,16 @@
   MODE(BINARY)                  \
   MODE(INTERACTIVE)
 
+#define FOREACH_MOVEMODE(MODE) \
+  MODE(STOPPED)                \
+  MODE(MOVING)
+
+#define FOREACH_SYSTEMMODE(MODE) \
+  MODE(STARTUP)                  \
+  MODE(UNCALIBRATED)             \
+  MODE(RUNNING)                  \
+  MODE(SHUTDOWN)
+
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
 
@@ -40,8 +50,24 @@ enum shellMode_t
   FOREACH_SHELLMODE(GENERATE_ENUM)
 };
 
+enum move_mode_t
+{
+  FOREACH_MOVEMODE(GENERATE_ENUM)
+};
+
+enum system_mode_t
+{
+  FOREACH_SYSTEMMODE(GENERATE_ENUM)
+};
+
 extern const char *shellModeNames[];
 extern shellMode_t shellMode;
+
+extern const char *moveModeNames[];
+extern move_mode_t moveMode;
+
+extern const char *systemModeNames[];
+extern system_mode_t systemMode;
 
 //These types should be defined in joint.h, but when I move them there, the compiler freaks out (because they're also used in protocol.h)
 typedef struct jointConfig_t
