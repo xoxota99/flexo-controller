@@ -148,64 +148,126 @@ int handleLog(int argc, char **argv)
 }
 
 /**
- * Move the given joint, by a given number of steps. 
- * e.g.: move 3 -20 -o
+ * Move the entire robot to the specified set of absolute angles (in radians). 
+ * Angles are provided relative to the joint's home position.
  **/
 int handleMove(int argc, char **argv)
 {
-  if (argc < 3)
+  if (argc != MOTOR_COUNT + 1)
   {
     Serial.println(USAGE_MOVE);
   }
   else
   {
-
-    String token(argv[2]);
-    long jointNum = token.toInt();
-
-    token = argv[3];
-    long steps = token.toInt();
-
-    bool ignoreLimits = false;
-    if (argc > 3)
+    if (systemMode == RUNNING)
     {
-      String o(argv[3]);
-      o = o.toUpperCase();
-      if (o == "-O")
+      switch (moveMode)
       {
-        ignoreLimits = true;
+      case MOVING:
+        Serial.println("Movement aborted. Robot is already moving.");
+        return SHELL_RET_FAILURE;
+        break;
+      case STOPPED:
+        for (int i = 0; i < MOTOR_COUNT; i++)
+        {
+          String token(argv[i + 1]);
+          float theta = token.toFloat();
+          float steps = (double)motorConfig[i].stepsPerRev / motorConfig[i].gearRatio / jointConfig[i].gearRatio * theta / TWO_PI;
+          //convert absolute radians to relative steps
+          motors[i]->setTargetAbs(steps);
+        }
+        moveMode = MOVING;
+        controller.moveAsync(motors);
+        break;
       }
     }
-
-    if (!ignoreLimits)
+    else
     {
-      //determine if this movement would put us outside the motor's limits.
-      int32_t pos = motors[jointNum]->getPosition();
-      int targetPos = pos + steps;
-      if (targetPos < jointConfig[jointNum].minPosition)
-      {
-        Serial.printf("ERROR: The specified movement would cause joint #%d to exceed it's minimum position limit [%d]. Use the -o switch to override.\n", jointNum, jointConfig[jointNum].minPosition);
-        return SHELL_RET_FAILURE;
-      }
-      else if (targetPos > jointConfig[jointNum].maxPosition)
-      {
-        Serial.printf("ERROR: The specified movement would cause joint #%d to exceed it's maximum position limit [%d]. Use the -o switch to override.\n", jointNum, jointConfig[jointNum].maxPosition);
-        return SHELL_RET_FAILURE;
-      }
+      Serial.printf("Movement aborted. System is in state: %s\n", systemModeNames[systemMode]);
+      return SHELL_RET_FAILURE;
     }
-    motors[jointNum]->setTargetRel(steps);
-    controller.moveAsync(motors);
   }
   return SHELL_RET_SUCCESS;
 }
 
-void dump(int i)
+/**
+ * Move the given joint, by a given number of steps. 
+ * e.g.: move 3 -20 -o
+ **/
+int handleJog(int argc, char **argv)
+{
+  if (argc < 3)
+  {
+    Serial.println(USAGE_JOG);
+  }
+  else
+  {
+
+    if (systemMode == RUNNING)
+    {
+      switch (moveMode)
+      {
+      case MOVING:
+        Serial.println("Movement aborted. Robot is already moving.");
+        return SHELL_RET_FAILURE;
+        break;
+      case STOPPED:
+        String token(argv[2]);
+        long jointNum = token.toInt();
+
+        token = argv[3];
+        long steps = token.toInt();
+
+        bool ignoreLimits = false;
+        if (argc > 3)
+        {
+          String o(argv[3]);
+          o = o.toUpperCase();
+          if (o == "-O")
+          {
+            ignoreLimits = true;
+          }
+        }
+
+        if (!ignoreLimits)
+        {
+          //determine if this movement would put us outside the motor's limits.
+          int32_t pos = motors[jointNum]->getPosition();
+          int targetPos = pos + steps;
+          if (targetPos < jointConfig[jointNum].minPosition)
+          {
+            Serial.printf("ERROR: The specified movement would cause joint #%d to exceed it's minimum position limit [%d]. Use the -o switch to override.\n", jointNum, jointConfig[jointNum].minPosition);
+            return SHELL_RET_FAILURE;
+          }
+          else if (targetPos > jointConfig[jointNum].maxPosition)
+          {
+            Serial.printf("ERROR: The specified movement would cause joint #%d to exceed it's maximum position limit [%d]. Use the -o switch to override.\n", jointNum, jointConfig[jointNum].maxPosition);
+            return SHELL_RET_FAILURE;
+          }
+        }
+        motors[jointNum]->setTargetRel(steps);
+        moveMode = MOVING;
+        controller.moveAsync(motors);
+
+        break;
+      }
+    }
+    else
+    {
+      Serial.printf("Movement aborted. System is in state: %s\n", systemModeNames[systemMode]);
+      return SHELL_RET_FAILURE;
+    }
+  }
+  return SHELL_RET_SUCCESS;
+}
+
+void dumpJoint(int i)
 {
   Serial.printf("=================================\n");
   Serial.printf("Joint %d:\n", i);
   Serial.printf("\tmin: %.2f\n", jointConfig[i].minPosition);
   Serial.printf("\tmax: %.2f\n", jointConfig[i].maxPosition);
-  Serial.printf("\tzero: %.2f\n", jointConfig[i].zeroPosition);
+  Serial.printf("\thome: %.2f\n", jointConfig[i].homePosition);
   double pos = motors[i]->getPosition();
   Serial.printf("\tposition: %.2f%s\n", pos, (pos < jointConfig[i].minPosition ? " [ < MIN ]" : (pos > jointConfig[i].maxPosition ? " [ > MAX ]" : "")));
   Serial.printf("\tMotor config:\n");
@@ -221,6 +283,7 @@ void dump(int i)
   Serial.printf("\t\tstepsPerRev: %d\n", motorConfig[i].stepsPerRev);
   Serial.printf("\t\tunsafeStartup: %s\n", motorConfig[i].unsafeStartup ? "true" : "false");
 }
+
 /**
  * Dump known status of each joint / motor.
  **/
@@ -229,7 +292,7 @@ int handleStatus(int argc, char **argv)
   String utime = uptime();
   unsigned int l = utime.length();
   char buf[l + 1];
-  uptime().toCharArray(buf, l);
+  utime.toCharArray(buf, l);
 
   Serial.printf("Flexo version:  %s\n", FLEXO_VERSION);
   Serial.printf("Built:          %s, %s\n", __DATE__, __TIME__);
@@ -239,11 +302,14 @@ int handleStatus(int argc, char **argv)
   {
     String token = argv[1];
     long idx = token.toInt();
-    dump((int)idx);
+    dumpJoint((int)idx);
   }
-  for (int i = 0; i < MOTOR_COUNT; i++)
+  else
   {
-    dump(i);
+    for (int i = 0; i < MOTOR_COUNT; i++)
+    {
+      dumpJoint(i);
+    }
   }
   return SHELL_RET_SUCCESS;
 }
@@ -276,7 +342,7 @@ int handleSet(int argc, char **argv)
       {
         jointConfig[jointNum].maxPosition = motors[jointNum]->getPosition();
       }
-      else if (extent.equals("ZERO"))
+      else if (extent.equals("HOME"))
       {
         motors[jointNum]->setPosition(0);
       }

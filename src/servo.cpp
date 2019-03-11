@@ -45,4 +45,23 @@ void setup_motors()
 
 void loop_motors()
 {
+  if (systemMode == RUNNING)
+  {
+    switch (moveMode)
+    {
+    case MOVING:
+      if (!controller.isRunning())
+      {
+        moveMode = STOPPED;
+      }
+      break;
+    case STOPPED:
+      if (controller.isRunning())
+      {
+        moveMode = MOVING;
+        Logger::error("Motors are moving, but moveState is STOPPED. Something set the motors moving without updating state.");
+      }
+      break;
+    }
+  }
 }

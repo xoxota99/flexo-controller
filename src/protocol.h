@@ -73,4 +73,12 @@ typedef struct req_set_t
     jointConfig_t jointConfig;
     motorConfig_t motorConfig;
 } req_set_t;
+
+typedef struct res_pose_t
+{
+    system_mode_t systemMode;
+    move_mode_t moveMode;
+    double theta[MOTOR_COUNT];
+} res_pose_t;
+
 #endif // __PROTOCOL_H__
