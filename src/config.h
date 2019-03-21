@@ -23,10 +23,9 @@
 
 #include "flexo.h" // for Arduino headers
 
-#define CONFIG_SHELL_MAX_COMMANDS 10 //Maximum number of supported Shell commands.
-#define SERIAL_BAUD 115200           //baud rate for shell commands.
-#define CPU_MAP_TEENSY_3_2           // What CPU pin mapping should we use?
-#define MOTOR_COUNT 6                // How many motors do we have?
+#define SERIAL_BAUD 115200 //baud rate for shell commands. Ignored for Teensy.
+#define CPU_MAP_TEENSY_3_2 // What CPU pin mapping should we use?
+#define MOTOR_COUNT 1      // How many motors do we have?
 
 #define FOREACH_SHELLMODE(MODE) \
   MODE(BINARY)                  \
@@ -72,14 +71,9 @@ extern system_state_t systemState;
 //These types should be defined in joint.h, but when I move them there, the compiler freaks out (because they're also used in protocol.h)
 typedef struct jointConfig_t
 {
-  // float gearRatio; // joints can have a gear ratio, separate from the motor's gearbox.
   int32_t minPosition;
   int32_t maxPosition;
   int32_t homePosition;
-  // } jointConfig_t;
-
-  // typedef struct motorConfig_t
-  // {
   unsigned int acceleration;
   bool inverseRotation;
   int maxSpeed;
@@ -91,7 +85,6 @@ typedef struct jointConfig_t
   byte csPin;
   unsigned int stepsPerRev;
   bool unsafeStartup;
-  // } motorConfig_t;
 } jointConfig_t;
 
 enum movementMode_t
