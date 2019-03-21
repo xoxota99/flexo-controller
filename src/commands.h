@@ -17,20 +17,17 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __SHELL_H__
-#define __SHELL_H__
-
-#include "flexo.h"
-#include <Shell.h> //https://github.com/geekfactory/Shell
+#ifndef __COMMANDS_H_
+#define __COMMANDS_H_
 
 // Usage messages
-#define USAGE_MOVE "Move all joints to the provided angles.\n \
+#define USAGE_MOVE "Move all joints to the provided angles (in degrees).\n \
 \t - Joints will accelerate and move at a speed determined by their individual motor configurations.\n \
 \t - Joints will not exceed their preset minimum / maximum limits.\n\n \
 usage: move <angle1> <angle2> <angle3> <angle4> <angle5> <angle6>\n \
-\t - angle [1-6] : The angle (in radians) for each joint, relative to its home position. \n \
+\t - angle [1-6] : The angle (in degrees) for each joint, relative to its home position. \n \
 \n \
-Example: \"move 3.14 -0.39265 0 0 0.7853 0\""
+Example: \"move 180 -90 0 0 90 0\""
 
 #define USAGE_JOG "Move the given joint, by a relative amount (in steps).\n \
 \t - The joint will accelerate and move at a speed determined by it's motor configuration.\n \
@@ -53,6 +50,9 @@ usage: set <extent> [<joint #>]\n \
 \t\t - max : The maximum angle of the joint.\n \
 \t\t - home : The home position of the joint.\n\n \
 Example : \"set 3 min\" - Set the minimum extent of joint #3 to its current position."
+
+#include "flexo.h"
+// #include "Shell.h" //https://github.com/geekfactory/Shell
 
 typedef struct command_t
 {
@@ -87,4 +87,4 @@ const command_t commands[] = {
     {handleReset, "reset", "Reset controller"},
     {handleSet, "set", "Set a joint minimum / maximum / home position"}};
 
-#endif // __SHELL_H__
+#endif // __COMMANDS_H_

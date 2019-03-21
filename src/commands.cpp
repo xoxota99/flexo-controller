@@ -18,7 +18,9 @@
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "shell.h"
+#include "commands.h"
+
+int cCount = 0;
 
 void setup_shell(int bps /* = SERIAL_BAUD */)
 {
@@ -44,8 +46,11 @@ void setup_shell(int bps /* = SERIAL_BAUD */)
 
     for (int i = 0; i < ccount; i++)
     {
-      Logger::debug("Registering command: %s", commands[i].shell_command_string);
-      shell_register(commands[i].shell_program, commands[i].shell_command_string);
+      Logger::info("Registering command: %s", commands[i].shell_command_string);
+      if (shell_register(commands[i].shell_program, commands[i].shell_command_string))
+      {
+        cCount++;
+      }
     }
   }
   delay(100);
@@ -89,6 +94,8 @@ void shell_writer(char data)
 int handleHelp(int argc, char **argv)
 {
   int size = *(&commands + 1) - commands;
+  Logger::info("%d commands suported\n", cCount);
+
   for (int i = 0; i < size; i++)
   {
     Serial.printf("%s\t\t%s\n", commands[i].shell_command_string, commands[i].shell_help_string);
@@ -171,8 +178,8 @@ int handleMove(int argc, char **argv)
         for (int i = 0; i < MOTOR_COUNT; i++)
         {
           String token(argv[i + 1]);
-          float theta = token.toFloat();
-          float steps = (double)jointConfig[i].stepsPerRev / jointConfig[i].gearRatio * theta / TWO_PI;
+          float degrees = token.toFloat();
+          float steps = (double)jointConfig[i].stepsPerRev / jointConfig[i].gearRatio * degrees / 360;
           //convert absolute radians to relative steps
           motors[i]->setTargetAbs(steps);
         }
@@ -201,87 +208,102 @@ int handleJog(int argc, char **argv)
     Serial.println(USAGE_JOG);
   }
   else
+
+      if (systemState == RUNNING)
   {
 
-    if (systemState == RUNNING)
     {
       switch (moveState)
       {
       case MOVING:
-        Serial.println("Movement aborted. Robot is already moving.");
+        Serial.println("Movement aborted. Controller is already running.");
         return SHELL_RET_FAILURE;
         break;
       case STOPPED:
-        String token(argv[2]);
+        String token(argv[1]);
         long jointNum = token.toInt();
-
-        token = argv[3];
-        long steps = token.toInt();
-
-        bool ignoreLimits = false;
-        if (argc > 3)
+        if (jointNum <= MOTOR_COUNT - 1)
         {
-          String o(argv[3]);
-          o = o.toUpperCase();
-          if (o == "-O")
-          {
-            ignoreLimits = true;
-          }
-        }
+          token = argv[2];
+          long degrees = token.toInt();
+          long steps = degrees / 360.0 * jointConfig[jointNum].stepsPerRev / jointConfig[jointNum].gearRatio;
+          // Logger::info("%d degrees = %d steps\n", degrees, steps);
+          bool continuous = (jointConfig[jointNum].minPosition == jointConfig[jointNum].maxPosition);
+          bool ignoreLimits = false;
 
-        if (!ignoreLimits)
+          if (argc > 3 && !continuous)
+          {
+            String o(argv[3]);
+
+            o = o.toUpperCase();
+
+            if (o == "-O")
+            {
+              ignoreLimits = true;
+            }
+          }
+
+          if (!ignoreLimits && !continuous)
+          {
+            //determine if this movement would put us outside the motor's limits.
+            int32_t pos = motors[jointNum]->getPosition();
+            Serial.printf("pos=%d, steps=%d\n", pos, steps);
+            long targetPos = pos + steps;
+            if (jointConfig[jointNum].minPosition != jointConfig[jointNum].maxPosition)
+            { //check extents
+              if (targetPos < jointConfig[jointNum].minPosition)
+              {
+                Serial.printf("ERROR: The specified movement (%d steps) would cause joint #%d to exceed it's minimum position limit [%d]. Use the -o switch to override.\n", targetPos, jointNum, jointConfig[jointNum].minPosition);
+                return SHELL_RET_FAILURE;
+              }
+              else if (targetPos > jointConfig[jointNum].maxPosition)
+              {
+                Serial.printf("ERROR: The specified movement (%d steps) would cause joint #%d to exceed it's maximum position limit [%d]. Use the -o switch to override.\n", targetPos, jointNum, jointConfig[jointNum].maxPosition);
+                return SHELL_RET_FAILURE;
+              }
+            }
+          }
+          motors[jointNum]->setTargetRel(steps);
+          moveState = MOVING;
+          controller.moveAsync(motors);
+        }
+        else
         {
-          //determine if this movement would put us outside the motor's limits.
-          int32_t pos = motors[jointNum]->getPosition();
-          int targetPos = pos + steps;
-          if (targetPos < jointConfig[jointNum].minPosition)
-          {
-            Serial.printf("ERROR: The specified movement would cause joint #%d to exceed it's minimum position limit [%d]. Use the -o switch to override.\n", jointNum, jointConfig[jointNum].minPosition);
-            return SHELL_RET_FAILURE;
-          }
-          else if (targetPos > jointConfig[jointNum].maxPosition)
-          {
-            Serial.printf("ERROR: The specified movement would cause joint #%d to exceed it's maximum position limit [%d]. Use the -o switch to override.\n", jointNum, jointConfig[jointNum].maxPosition);
-            return SHELL_RET_FAILURE;
-          }
+          Serial.printf("ERROR: Invalid joint #%d. Valid joints are 0 thru %d\n", jointNum, MOTOR_COUNT - 1);
+          return SHELL_RET_FAILURE;
         }
-        motors[jointNum]->setTargetRel(steps);
-        moveState = MOVING;
-        controller.moveAsync(motors);
-
         break;
       }
     }
-    else
-    {
-      Serial.printf("Movement aborted. System is in state: %s\n", systemStateNames[systemState]);
-      return SHELL_RET_FAILURE;
-    }
+    return SHELL_RET_SUCCESS;
   }
-  return SHELL_RET_SUCCESS;
+  else
+  {
+    Serial.printf("Movement aborted. System is in state: %s\n", systemStateNames[systemState]);
+    return SHELL_RET_FAILURE;
+  }
 }
 
 void dumpJoint(int i)
 {
+  double pos = motors[i]->getPosition();
   Serial.printf("=================================\n");
   Serial.printf("Joint %d:\n", i);
-  Serial.printf("\tmin: %.2f\n", jointConfig[i].minPosition);
-  Serial.printf("\tmax: %.2f\n", jointConfig[i].maxPosition);
-  Serial.printf("\thome: %.2f\n", jointConfig[i].homePosition);
-  double pos = motors[i]->getPosition();
-  Serial.printf("\tposition: %.2f%s\n", pos, (pos < jointConfig[i].minPosition ? " [ < MIN ]" : (pos > jointConfig[i].maxPosition ? " [ > MAX ]" : "")));
-  Serial.printf("\tMotor config:\n");
-  Serial.printf("\t\tacceleration: %d\n", jointConfig[i].acceleration);
-  Serial.printf("\t\tinverseRotation: %s\n", jointConfig[i].inverseRotation ? "true" : "false");
-  Serial.printf("\t\tmaxSpeed: %d\n", jointConfig[i].maxSpeed);
-  Serial.printf("\t\tpullInFreq: %d\n", jointConfig[i].pullInFreq);
-  Serial.printf("\t\tstepPinPolarity: %d\n", jointConfig[i].stepPinPolarity);
-  Serial.printf("\t\tgearRatio: %.2f\n", jointConfig[i].gearRatio);
-  Serial.printf("\t\tdirPin: %d\n", jointConfig[i].dirPin);
-  Serial.printf("\t\tstepPin: %d\n", jointConfig[i].stepPin);
-  Serial.printf("\t\tcsPin: %d\n", jointConfig[i].csPin);
-  Serial.printf("\t\tstepsPerRev: %d\n", jointConfig[i].stepsPerRev);
-  Serial.printf("\t\tunsafeStartup: %s\n", jointConfig[i].unsafeStartup ? "true" : "false");
+  Serial.printf("\tCurrent Position: %d\n\n", pos);
+  Serial.printf("\tmin: %d\n", jointConfig[i].minPosition);
+  Serial.printf("\tmax: %d\n", jointConfig[i].maxPosition);
+  Serial.printf("\thome: %d\n", jointConfig[i].homePosition);
+  Serial.printf("\tacceleration: %d\n", jointConfig[i].acceleration);
+  Serial.printf("\tinverseRotation: %s\n", jointConfig[i].inverseRotation ? "true" : "false");
+  Serial.printf("\tmaxSpeed: %d\n", jointConfig[i].maxSpeed);
+  Serial.printf("\tpullInFreq: %d\n", jointConfig[i].pullInFreq);
+  Serial.printf("\tstepPinPolarity: %d\n", jointConfig[i].stepPinPolarity);
+  Serial.printf("\tgearRatio: %.2f\n", jointConfig[i].gearRatio);
+  Serial.printf("\tdirPin: %d\n", jointConfig[i].dirPin);
+  Serial.printf("\tstepPin: %d\n", jointConfig[i].stepPin);
+  Serial.printf("\tcsPin: %d\n", jointConfig[i].csPin);
+  Serial.printf("\tstepsPerRev: %d\n", jointConfig[i].stepsPerRev);
+  Serial.printf("\tunsafeStartup: %s\n", jointConfig[i].unsafeStartup ? "true" : "false");
 }
 
 /**
@@ -296,8 +318,8 @@ int handleStatus(int argc, char **argv)
 
   Serial.printf("Flexo version:  %s\n", FLEXO_VERSION);
   Serial.printf("Built:          %s, %s\n", __DATE__, __TIME__);
-  Serial.printf("Uptime: %s", buf);
-  Serial.printf("Shell Mode: %s", shellModeNames[shellMode]);
+  Serial.printf("Uptime:         %s\n", buf);
+  Serial.printf("Shell Mode:     %s\n", shellModeNames[shellMode]);
   if (argc > 1)
   {
     String token = argv[1];
