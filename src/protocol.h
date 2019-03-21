@@ -20,10 +20,10 @@
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
-#include "flexo.h"
-
 #define PROTOCOL_VERSION_MAJOR 0 // Major version difference indicates incompatible.
 #define PROTOCOL_VERSION_MINOR 1 // All minor versions should be backward compatible.
+
+#include "flexo.h"
 
 enum msg_type_t
 {

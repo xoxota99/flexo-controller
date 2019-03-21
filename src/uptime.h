@@ -20,13 +20,13 @@
 #ifndef __UPTIME_H__
 #define __UPTIME_H__
 
-#include "flexo.h"
-
 #define MILLIS_PER_SECOND 1000
 #define MILLIS_PER_MINUTE 60000
 #define MILLIS_PER_HOUR 3600000
 #define MILLIS_PER_DAY 86400000L
 #define MILLIS_PER_YEAR 22896000000L //TODO: Leap years?
+
+#include "flexo.h"
 
 typedef struct elapsed_t
 {
