@@ -31,36 +31,7 @@ typedef struct ik_config_t
   double theta;
 } ik_config_t;
 
-const ik_config_t dh_params[MOTOR_COUNT]{
-    {a : -89.978,
-     alpha : PI / 2,
-     d : -139.75,
-     theta : -PI},
-
-    {a : 0.0,
-     alpha : 0.0,
-     d : 0.0,
-     theta : -PI / 2},
-
-    {a : 66.125,
-     alpha : PI / 2,
-     d : 0.0,
-     theta : 0.0},
-
-    {a : 0.0,
-     alpha : -PI / 2,
-     d : 342.472,
-     theta : 0.0},
-
-    {a : 0.0,
-     alpha : -PI / 2,
-     d : 0.0,
-     theta : 0.0},
-
-    {a : 0.0,
-     alpha : PI,
-     d : -47.425,
-     theta : PI}};
+extern const ik_config_t dh_params[];
 
 /** 
  * Translate / rotate the tool origin to the given location in the o0 coordinate frame. 
