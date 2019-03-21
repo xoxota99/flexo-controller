@@ -48,20 +48,48 @@ system_state_t systemState = STARTUP;
 
 void setup()
 {
+  // Logger::level = Logger::DEBUG;
 
   while (!Serial && millis() < 1000)
     ;
+  if (Serial)
+  {
+    delay(1000); //give time for client to connect.
+  }
 
   setup_motors();
 
-  setup_endpoint();
+  // setup_endpoint();
   setup_shell();
+  setup_led();
+
+  systemState = RUNNING;
 }
 
 void loop()
 {
   loop_motors();
 
-  loop_endpoint();
+  // loop_endpoint();
   loop_shell();
+  loop_led();
+}
+
+//=====
+// Blink an LED every once in a while, to let me know the ARduino is still alive.
+void setup_led()
+{
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWriteFast(LED_BUILTIN, HIGH);
+}
+
+void loop_led()
+{
+  static uint32_t last_ms = 0;
+  uint32_t m = millis();
+  if (m - last_ms >= 1000)
+  {
+    digitalWriteFast(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    last_ms = m;
+  }
 }
