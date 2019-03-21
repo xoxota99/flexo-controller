@@ -21,11 +21,9 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include "flexo.h" // for Arduino headers
-
 #define SERIAL_BAUD 115200 //baud rate for shell commands. Ignored for Teensy.
 #define CPU_MAP_TEENSY_3_2 // What CPU pin mapping should we use?
-#define MOTOR_COUNT 1      // How many motors do we have?
+#define MOTOR_COUNT 6      // How many motors do we have?
 
 #define FOREACH_SHELLMODE(MODE) \
   MODE(BINARY)                  \
@@ -43,6 +41,8 @@
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
+
+#include "flexo.h" // for Arduino headers
 
 enum shellMode_t
 {
