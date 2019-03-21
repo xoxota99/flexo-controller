@@ -26,28 +26,27 @@ Stepper *motors[MOTOR_COUNT] = {
     new Stepper(PIN_STEP_3, PIN_DIR_3),
     new Stepper(PIN_STEP_4, PIN_DIR_4),
     new Stepper(PIN_STEP_5, PIN_DIR_5),
-    new Stepper(PIN_STEP_6, PIN_DIR_6),
-};
+    new Stepper(PIN_STEP_6, PIN_DIR_6)};
 
 StepControl<> controller;
 
 jointConfig_t jointConfig[] = {
-    {minPosition : -50,
-     maxPosition : 50,
+    {minPosition : -3600,
+     maxPosition : 3600,
      homePosition : 0,
-     acceleration : 50000,
-     inverseRotation : true,
-     maxSpeed : 15000,
+     acceleration : 7500,
+     inverseRotation : false,
+     maxSpeed : 5000, //Trying for 1 rotation per second (accounting for gearRatio)
      pullInFreq : 100,
      stepPinPolarity : HIGH,
-     gearRatio : 0.25f, //20:80
+     gearRatio : 0.2250f, //19:80
      dirPin : PIN_DIR_1,
      stepPin : PIN_STEP_1,
      csPin : PIN_CS_1,
      stepsPerRev : 1600,
      unsafeStartup : false},
-    {minPosition : -50,
-     maxPosition : 50,
+    {minPosition : 0,
+     maxPosition : 0,
      homePosition : 0,
      acceleration : 50000,
      inverseRotation : true,
@@ -120,7 +119,7 @@ jointConfig_t jointConfig[] = {
 /**
 * Jog a given joint by a given angle (in radians), in the given direction. Movement may be relative or absolute.
 *
-* Return: True if the momvent was successful. False if the movement was not successful.
+* Return: True if the movement was successful. False if the movement was not successful.
 **/
 bool jog(int idx, double theta, movementMode_t moveMode)
 {
@@ -136,9 +135,6 @@ bool jog(int idx, double theta, movementMode_t moveMode)
       switch (moveMode)
       {
       case ABSOLUTE:
-        //convert to relative. What is our current position?
-        // int pos = motors[idx]->getPosition();
-        // steps = steps - pos;
         motors[idx]->setTargetAbs(steps);
         break;
       case RELATIVE:
@@ -174,6 +170,7 @@ void setup_motors()
     motors[i]->setMaxSpeed(jointConfig[i].maxSpeed);
     motors[i]->setPullInSpeed(jointConfig[i].pullInFreq);
     motors[i]->setStepPinPolarity(jointConfig[i].stepPinPolarity);
+    motors[i]->setPosition(0);
   }
 }
 
