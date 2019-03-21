@@ -58,4 +58,6 @@
 
 #endif //CPU_MAP_TEENSY_3_2
 
+#include "flexo.h"
+
 #endif // __CPU_MAP_H__
