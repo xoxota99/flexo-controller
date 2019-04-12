@@ -34,13 +34,11 @@
 #include "uptime.h"
 #include "reset.h"
 #include "Logger.h"
-#include "Shell.h"
 #include "cpu_map.h"
 #include "joint.h"
 #include "ik_solver.h"
-#include "commands.h"
-#include "protocol.h"
-#include "endpoint.h"
+#include "Shell.h"
+#include "gcode.h"
 // ---------------------------------------------------------------------------------------
 
 void setup_led();

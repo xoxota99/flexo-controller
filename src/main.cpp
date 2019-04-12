@@ -60,7 +60,7 @@ void setup()
   setup_motors();
 
   // setup_endpoint();
-  setup_shell();
+  setup_gcode();
   setup_led();
 
   systemState = RUNNING;
@@ -71,12 +71,12 @@ void loop()
   loop_motors();
 
   // loop_endpoint();
-  loop_shell();
+  loop_gcode();
   loop_led();
 }
 
 //=====
-// Blink an LED every once in a while, to let me know the ARduino is still alive.
+// Blink an LED every once in a while, to let me know the Arduino is still alive.
 void setup_led()
 {
   pinMode(LED_BUILTIN, OUTPUT);
