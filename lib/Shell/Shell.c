@@ -76,7 +76,7 @@ static void shell_prompt();
  */
 static void shell_format(const char *fmt, va_list va);
 
-bool shell_init(shell_reader_t reader, shell_writer_t writer, char *msg)
+bool shell_init(shell_reader_t reader, shell_writer_t writer, const char *msg)
 {
     if (reader == 0 || writer == 0)
         return false;
@@ -421,7 +421,8 @@ static int shell_parse(char *buf, char **argv, unsigned short maxargs)
 static void shell_prompt()
 {
 #ifdef ARDUINO
-    shell_print_pm(PSTR("device>"));
+    shell_print_pm(PSTR(PROMPT));
+    // shell_print_pm(PSTR("device>"));
 #else
     shell_print((const char *)"device>");
 #endif

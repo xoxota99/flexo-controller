@@ -43,7 +43,7 @@
 /**
  * Defines the maximum number of commands that can be registered
  */
-#define CONFIG_SHELL_MAX_COMMANDS 10
+#define CONFIG_SHELL_MAX_COMMANDS 50
 #endif
 #if !defined(CONFIG_SHELL_MAX_INPUT)
 /**
@@ -88,6 +88,7 @@
 #define SHELL_RET_IOPENDING -1
 
 #define SHELL_VERSION_STRING "uShell 1.0.1"
+#define PROMPT ""
 
 /*-------------------------------------------------------------*/
 /*		Typedefs enums & structs			*/
@@ -166,7 +167,7 @@ extern "C"
 	 * @return Returns true if the shell was successfully initialized, returns false
 	 * otherwise.
 	 */
-	bool shell_init(shell_reader_t reader, shell_writer_t writer, char *msg);
+	bool shell_init(shell_reader_t reader, shell_writer_t writer, const char *msg);
 
 	/**
 	 * @brief Registers a command with the command line library
