@@ -1,5 +1,5 @@
 /*
-  ik_solver.h - Denavit-Hartenberg parameters for inverse kinematics.
+  ik_solver.h - Inverse / Forward kinematics solver
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -23,22 +23,40 @@
 
 #include "flexo.h"
 
+typedef struct frame_t
+{
+  double x;
+  double y;
+  double z;
+  double yaw;
+  double pitch;
+  double roll;
+} frame_t;
+
+extern const frame_t work_frame;
+extern const frame_t tool_frame;
+
 typedef struct ik_config_t
 {
-  double a;
+  double theta;
   double alpha;
   double d;
-  double theta;
+  double a;
 } ik_config_t;
 
 extern const ik_config_t dh_params[];
 
 /** 
- * Translate / rotate the tool origin to the given location in the o0 coordinate frame. 
+ * Translate / rotate the tool origin to the given location in the world coordinate frame. 
  * Solution is returned as an array of doubles, representing the rotation (in radians) 
  * of each joint in the IK chain.
  **/
-void moveTo(double *solution, double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta);
+void inverse(double *solution, double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta);
+
+/**
+ * Given a set of joint angles, return the end effector's position (x/y/z/yaw/pitch/roll) in the world frame.
+ **/
+void forward(frame_t *solution, double *jointAngles);
 
 //Translate the tool origin (with no rotation) to the given location in the o0 coordinate frame
 void translate(double *solution, double x_pos, double y_pos, double z_pos);
