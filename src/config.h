@@ -68,29 +68,4 @@ extern move_state_t moveState;
 extern const char *systemStateNames[];
 extern system_state_t systemState;
 
-//These types should be defined in joint.h, but when I move them there, the compiler freaks out (because they're also used in protocol.h)
-typedef struct jointConfig_t
-{
-  int32_t minPosition;
-  int32_t maxPosition;
-  int32_t homePosition;
-  unsigned int acceleration;
-  bool inverseRotation;
-  int maxSpeed;
-  unsigned int pullInFreq;
-  int stepPinPolarity;
-  float gearRatio; // Motors can have their own gear ratio / gearbox
-  byte dirPin;
-  byte stepPin;
-  byte csPin;
-  unsigned int stepsPerRev;
-  bool unsafeStartup;
-} jointConfig_t;
-
-enum movementMode_t
-{
-  ABSOLUTE,
-  RELATIVE
-};
-
 #endif // __CONFIG_H__
