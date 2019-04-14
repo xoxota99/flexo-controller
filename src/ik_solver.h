@@ -26,7 +26,7 @@
 extern const frame_t work_frame;
 extern const frame_t tool_frame;
 
-typedef struct 
+typedef struct
 {
   // double theta;
   double alpha;

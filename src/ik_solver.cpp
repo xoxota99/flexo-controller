@@ -275,15 +275,3 @@ void forward(frame_t *solution, double *jointAngles)
     solution->pitch = I8;
     solution->roll = degrees(atan2((r_0_t[1][2] / I8), (r_0_t[0][3] / I8)));
 }
-
-//Translate the tool origin (with no rotation) to the given location in the world coordinate frame
-void translate(double *solution, double x_pos, double y_pos, double z_pos)
-{
-    // TODO
-}
-
-//Rotate the tool around the tool origin (with no translation).
-void rotate(double *solution, double roll, double pitch, double yaw)
-{
-    // TODO
-}
