@@ -31,44 +31,35 @@ asm(".global _printf_float");
 // this is the magic trick for scanf to support float
 asm(".global _scanf_float");
 
-const char *shellModeNames[] = {
-    FOREACH_SHELLMODE(GENERATE_STRING)};
+const char *runStateNames[] = {
+    FOREACH_RUNSTATE(GENERATE_STRING)};
 
-shellMode_t shellMode = INTERACTIVE;
-
-const char *moveStateNames[] = {
-    FOREACH_MOVESTATE(GENERATE_STRING)};
-
-move_state_t moveState = STOPPED;
-
-const char *systemStateNames[] = {
-    FOREACH_SYSTEMSTATE(GENERATE_STRING)};
-
-system_state_t systemState = STARTUP;
+run_state_t runState = STARTUP;
 
 void setup()
 {
-  // Logger::level = Logger::DEBUG;
-
-  while (!Serial && millis() < 1000)
-    ;
-  if (Serial)
-  {
-    delay(1000); //give time for client to connect.
-  }
-
-  setup_motors();
-
-  // setup_endpoint();
+  setup_joints();
   setup_gcode();
   setup_led();
 
-  systemState = RUNNING;
+  //Wait for user input
+  //Move to home position (at low speed), and set joint_position values
+  for (int i = 0; i < MOTOR_COUNT; i++)
+  {
+    motors[i]->setTargetAbs(jointConfig[i].homePosition);
+  }
+  controller.move(motors, 0.25f);
+
+  //TODO: Set joint position state, based on known "home" motor values.
+  controller.isRunning();
+  //TODO: use IKSolver to set current_frame
+
+  runState = RUNNING;
 }
 
 void loop()
 {
-  loop_motors();
+  loop_joints();
 
   // loop_endpoint();
   loop_gcode();

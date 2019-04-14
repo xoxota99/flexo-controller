@@ -28,7 +28,7 @@
 
 #include "flexo.h"
 
-typedef struct elapsed_t
+typedef struct
 {
   int millis;  // milliseconds from 0 to 1000
   int seconds; // seconds of minutes from 0 to 61
