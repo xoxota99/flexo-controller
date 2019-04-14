@@ -26,19 +26,19 @@
 
 // Define standard libraries used by Flexo.
 #include <Arduino.h>
-#include <AS5048A.h>
 #include <StepControl.h>
 
-// Define the Flexo system include files. NOTE: Do not alter organization.
-#include "config.h"
-#include "uptime.h"
-#include "reset.h"
-#include "Logger.h"
-#include "cpu_map.h"
-#include "joint.h"
-#include "ik_solver.h"
-#include "Shell.h"
-#include "gcode.h"
+// Define the Flexo system include files. The order is important.
+#include "config.h"    //configuration
+#include "cpu_map.h"   //pin map configuration
+#include "uptime.h"    //uptime utility
+#include "reset.h"     //reset utility
+#include "Logger.h"    //Logging capability
+#include "joint.h"     //Joint management
+#include "ik_solver.h" //Forward / Inverse Kinematics solver.
+#include "Queue.h"     //Instruction Queue
+#include "Stack.h"     //State stack
+#include "gcode.h"     //GCode interpreter
 // ---------------------------------------------------------------------------------------
 
 void setup_led();
