@@ -23,22 +23,12 @@
 
 #include "flexo.h"
 
-typedef struct frame_t
-{
-  double x;
-  double y;
-  double z;
-  double yaw;
-  double pitch;
-  double roll;
-} frame_t;
-
 extern const frame_t work_frame;
 extern const frame_t tool_frame;
 
-typedef struct ik_config_t
+typedef struct 
 {
-  double theta;
+  // double theta;
   double alpha;
   double d;
   double a;
@@ -48,20 +38,16 @@ extern const ik_config_t dh_params[];
 
 /** 
  * Translate / rotate the tool origin to the given location in the world coordinate frame. 
- * Solution is returned as an array of doubles, representing the rotation (in radians) 
+ * Yaw, Pitch and Roll are given in degrees.
+ * 
+ * Solution is returned as an array of doubles, representing the rotation (in degrees) 
  * of each joint in the IK chain.
  **/
-void inverse(double *solution, double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta);
+void inverse(double *solution, const double x_pos, const double y_pos, const double z_pos, const double yaw_theta, const double pitch_theta, const double roll_theta);
 
 /**
  * Given a set of joint angles, return the end effector's position (x/y/z/yaw/pitch/roll) in the world frame.
  **/
-void forward(frame_t *solution, double *jointAngles);
-
-//Translate the tool origin (with no rotation) to the given location in the o0 coordinate frame
-void translate(double *solution, double x_pos, double y_pos, double z_pos);
-
-//Rotate the tool around the tool origin (with no translation).
-void rotate(double *solution, double roll_theta, double pitch_theta, double yaw_theta);
+void forward(frame_t *solution, const double *jointAngles);
 
 #endif // __IK_SOLVER_H__
