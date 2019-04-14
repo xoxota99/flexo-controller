@@ -28,7 +28,7 @@ void Logger::_log_va_list(const LogLevel level, const char *fmt, va_list args)
     char buffer[256];
     // va_start (args, fmt);
     vsprintf(buffer, fmt, args);
-    Serial.printf("[%s] - %s\n", levelStrings[level], buffer);
+    Serial.printf("//[%s] - %s\n", levelStrings[level], buffer);
     // va_end (args);
 }
 
