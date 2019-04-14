@@ -1,1 +1,0 @@
-For some reason, including Shell.h as a system library, #defining CONFIG_SHELL_MAX_COMMANDS has no effect. So we need to include it as source. Bleh. 

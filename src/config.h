@@ -25,18 +25,14 @@
 #define CPU_MAP_TEENSY_3_2 // What CPU pin mapping should we use?
 #define MOTOR_COUNT 6      // How many motors do we have?
 
-#define FOREACH_SHELLMODE(MODE) \
-  MODE(BINARY)                  \
-  MODE(INTERACTIVE)
+#define FIRMWARE_VERSION "0.1"
+#define FIRMWARE_URL "https://github.com/xoxota99/flexo-controller"
+#define MACHINE_TYPE "Flexo"
 
-#define FOREACH_MOVESTATE(MODE) \
-  MODE(STOPPED)                 \
-  MODE(MOVING)
-
-#define FOREACH_SYSTEMSTATE(MODE) \
-  MODE(STARTUP)                   \
-  MODE(UNCALIBRATED)              \
-  MODE(RUNNING)                   \
+#define FOREACH_RUNSTATE(MODE) \
+  MODE(STARTUP)                \
+  MODE(UNCALIBRATED)           \
+  MODE(RUNNING)                \
   MODE(SHUTDOWN)
 
 #define GENERATE_ENUM(ENUM) ENUM,
@@ -44,28 +40,22 @@
 
 #include "flexo.h" // for Arduino headers
 
-enum shellMode_t
+typedef struct
 {
-  FOREACH_SHELLMODE(GENERATE_ENUM)
+  double x;
+  double y;
+  double z;
+  double yaw;
+  double pitch;
+  double roll;
+} frame_t;
+
+enum run_state_t
+{
+  FOREACH_RUNSTATE(GENERATE_ENUM)
 };
 
-enum move_state_t
-{
-  FOREACH_MOVESTATE(GENERATE_ENUM)
-};
-
-enum system_state_t
-{
-  FOREACH_SYSTEMSTATE(GENERATE_ENUM)
-};
-
-extern const char *shellModeNames[];
-extern shellMode_t shellMode;
-
-extern const char *moveStateNames[];
-extern move_state_t moveState;
-
-extern const char *systemStateNames[];
-extern system_state_t systemState;
+extern const char *runStateNames[];
+extern run_state_t runState;
 
 #endif // __CONFIG_H__
