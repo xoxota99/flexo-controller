@@ -30,6 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Other stuff
 .DS_Store
 .vscode/*
 .pioenvs/*
