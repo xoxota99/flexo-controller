@@ -99,6 +99,7 @@ int handleMillimeters(int argc, char **argv);    // G21
 int handleHome(int argc, char **argv);           // G28
 int handleAbsolute(int argc, char **argv);       // G90
 int handleRelative(int argc, char **argv);       // G91
+int handleSetPosition(int argc, char **argv);    // G92
 
 // MCode
 /**
@@ -169,6 +170,7 @@ const command_t commands[] = {
     {handleHome, "G28"},
     {handleAbsolute, "G90"},
     {handleRelative, "G91"},
+    {handleSetPosition, "G92"},
     {handleSetMinimum, "G161"},
     {handleSetMaximum, "G162"},
     {handleStop, "M00"},

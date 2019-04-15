@@ -567,6 +567,22 @@ int handleSetMaximum(int argc, char **argv) // G162
     return SHELL_RET_SUCCESS;
 }
 
+int handleSetPosition(int argc, char **argv) //G92
+{
+    if (argc == 0)
+    {
+        //set current position as the zero point.
+        for (int i = 0; i < MOTOR_COUNT; i++)
+        {
+            motors[i]->setPosition(0);
+        }
+    }
+    else
+    {
+        Serial.println("ok //G92: Not yet supported.");
+    }
+}
+
 int handleStop(int argc, char **argv) // M00
 {
     bStopRequested = true;
