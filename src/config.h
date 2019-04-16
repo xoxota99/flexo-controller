@@ -31,7 +31,7 @@
 
 #define FOREACH_RUNSTATE(MODE) \
   MODE(STARTUP)                \
-  MODE(UNCALIBRATED)           \
+  MODE(CALIBRATING)            \
   MODE(RUNNING)                \
   MODE(SHUTDOWN)
 
