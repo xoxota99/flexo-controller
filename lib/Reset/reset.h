@@ -1,5 +1,5 @@
 /*
-  uptime.h - utility functions for tracking uptime.
+  reset.h - reset macros.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -17,28 +17,21 @@
   You should have received a copy of the GNU General Public License
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __UPTIME_H__
-#define __UPTIME_H__
+#ifndef __RESET_H__
+#define __RESET_H__
 
-#define MILLIS_PER_SECOND 1000
-#define MILLIS_PER_MINUTE 60000
-#define MILLIS_PER_HOUR 3600000
-#define MILLIS_PER_DAY 86400000L
-#define MILLIS_PER_YEAR 22896000000L //TODO: Leap years?
+#include <Arduino.h>
 
-#include "flexo.h"
+#ifdef CORE_TEENSY
+//Software reset macros / MMap FOR TEENSY ONLY
+#define CPU_RESTART_VAL 0x5FA0004                         // write this magic number...
+#define CPU_RESTART_ADDR (uint32_t *)0xE000ED0C           // to this memory location...
+#define CPU_RESTART (*CPU_RESTART_ADDR = CPU_RESTART_VAL) // presto!
 
-typedef struct
-{
-  int millis;  // milliseconds from 0 to 1000
-  int seconds; // seconds of minutes from 0 to 61
-  int minutes; // minutes of hour from 0 to 59
-  int hours;   // hours of day from 0 to 24
-  int days;    // day of year from 0 to 365
-  int years;   // years elapsed
-} elapsed_t;
+#else
 
-elapsed_t elapse(uint32_t millis);
-String uptime();
+#define CPU_RESTART asm volatile("  jmp 0") // close enough for arduino
 
-#endif // __UPTIME_H__
+#endif
+
+#endif

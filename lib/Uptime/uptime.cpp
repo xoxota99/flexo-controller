@@ -20,6 +20,7 @@
 
 #include "uptime.h"
 
+elapsed_t elapse(uint32_t millis);
 String uptime()
 {
     elapsed_t elapsed_time = elapse(millis());
