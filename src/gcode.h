@@ -18,6 +18,8 @@
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//TODO: This entire GCode implementation is just awful. Replace it with GRBL if possible.
+
 #ifndef __GCODE_H__
 
 #define __GCODE_H__
