@@ -28,16 +28,17 @@
 #include <Arduino.h>
 #include <StepControl.h>
 
+#include "uptime.h" //uptime utility
+#include "reset.h"  //reset utility
+#include "Queue.h"  //Instruction Queue
+#include "Stack.h"  //State stack
+#include "Logger.h" //Logging capability
+
 // Define the Flexo system include files. The order is important.
 #include "config.h"    //configuration
 #include "cpu_map.h"   //pin map configuration
-#include "uptime.h"    //uptime utility
-#include "reset.h"     //reset utility
-#include "Logger.h"    //Logging capability
 #include "joint.h"     //Joint management
 #include "ik_solver.h" //Forward / Inverse Kinematics solver.
-#include "Queue.h"     //Instruction Queue
-#include "Stack.h"     //State stack
 #include "gcode.h"     //GCode interpreter
 // ---------------------------------------------------------------------------------------
 
