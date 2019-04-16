@@ -18,6 +18,24 @@
   along with Flexo.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+//TODO: This entire GCode implementation is just awful. Replace it with GRBL if possible.
+
+//TODO: GCode comes in "words". Tehre are "command words" and "parameter words". Parse
+// using this model, and become less reliant on whitespace.
+
+/** 
+ * TODO: Implement "modal groups" (See https://www.autodesk.com/industry/manufacturing/resources/manufacturing-engineer/g-code ):
+ * Group 1 (motion): G00, G01, G02, G03, G80, G81, G82, G84, G85, G86, G87, G88, G89
+ * Group 2 (plane selection – XY, YZ, ZX): G17, G18, G19
+ * Group 3 (absolute/incremental mode): G90, G91
+ * Group 5 (feed rate mode): G93, G94
+ * Group 6 (units – inches/millimeters): G20, G21
+ * Group 7 (cutter radius compensation – CRC): G40, G41, G42
+ * Group 8 (tool length offset – TLO): G43, G49
+ * Group 10 (return mode in canned cycles): G98, G99
+ * Group 12 (work coordinate system selection – WCSS): G54, G55, G56, G57, G58, G59)
+ **/
+
 #include "gcode.h"
 
 Queue<char *> queue = Queue<char *>(INSTRUCTION_QUEUE_DEPTH);
@@ -178,7 +196,7 @@ int execute(char *instruction)
             }
             else
             {
-                execute(buf); //recurse, but without the line number.
+                return execute(buf); //recurse, but without the line number.
             }
             break;
         case 'G':
@@ -191,7 +209,7 @@ int execute(char *instruction)
 
             if (argc > 0)
             {
-                for (int i = 0; i < (sizeof(commands) / sizeof(command_t)); i++)
+                for (unsigned i = 0; i < (sizeof(commands) / sizeof(command_t)); i++)
                 {
                     if (!strcmp(commands[i].commandStr, argv_list[0]))
                     {
@@ -205,6 +223,7 @@ int execute(char *instruction)
             }
         }
     }
+    return SHELL_RET_FAILURE;
 }
 
 int parse(char *buf, char **argv)
@@ -330,7 +349,7 @@ int handleMove(int argc, char **argv)
         }
         else
         {
-            //ignore it.
+            //Unknown parameter. ignore it.
             //TODO: Support multi-command mode (multiple GCode commands on a single line)
         }
     }
