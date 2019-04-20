@@ -1,5 +1,5 @@
 /*
-  gcode.h - GCODE parser message definitions.
+  gcode_old.h - GCODE parser message definitions.
   Part of flexo-controller
 
   Copyright (c) 2019 Phil Desrosiers
@@ -20,14 +20,14 @@
 
 //TODO: This entire GCode implementation is just awful. Replace it with GRBL if possible.
 
-#ifndef __GCODE_H__
+#ifndef __GCODE_OLD_H__
 
-#define __GCODE_H__
+#define __GCODE_OLD_H__
 
-#define CONFIG_MAX_STACK_DEPTH 5
+#define CONFIG_MAX_STACK_DEPTH 5         //Stack depth for GCode Push / pop operations (M120 / M121)
 #define CONFIG_SHELL_MAX_INPUT 80        //how many characters max per line of serial input?
 #define CONFIG_SHELL_MAX_COMMAND_ARGS 10 //how many arguments maximum per GCode command?
-#define INSTRUCTION_QUEUE_DEPTH 32       //how many instructions can we have waiting for processing.
+// #define INSTRUCTION_QUEUE_DEPTH 32       //how many instructions can we have waiting for processing.
 
 // #define SHELL_ASCII_NUL 0x00
 #define SHELL_ASCII_BEL 0x07
@@ -88,8 +88,8 @@ void setup_gcode(int bps = SERIAL_BAUD);
  **/
 void loop_gcode();
 
-int parse(char *buf, char **argv); //convert a command string to a count of arguments, and a tokenized list of parameters.
-int execute(char *instruction);    //execute a command (delegating to a command-specific handler)
+int parse_gcode(char *buf, char **argv); //convert a command string to a count of arguments, and a tokenized list of parameters.
+int execute_gcode(char *instruction);    //execute a command (delegating to a command-specific handler)
 
 int handleRapidMove(int argc, char **argv);      // G00
 int handleControlledMove(int argc, char **argv); // G01

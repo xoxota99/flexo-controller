@@ -38,7 +38,7 @@
 
 #include "gcode.h"
 
-Queue<char *> queue = Queue<char *>(INSTRUCTION_QUEUE_DEPTH);
+// Queue<char *> queue = Queue<char *>(INSTRUCTION_QUEUE_DEPTH);
 Stack<stack_entry_t> stack = Stack<stack_entry_t>(CONFIG_MAX_STACK_DEPTH);
 char buff[CONFIG_SHELL_MAX_INPUT];
 unit_t unit;
@@ -50,6 +50,14 @@ void setup_gcode(int bps)
     Serial.begin(bps);
 }
 
+//TODO: Can we replace this with serialEvent()?
+/**
+ * TODO: Should this be synchronous (ie: eliminate the queueing 
+ * mechanism for incoming commands, but still process other events 
+ * (Such as LED blinks))?
+ **/
+
+// Read -> Parse -> Execute(GCODE | NON-GCODE)
 void loop_gcode()
 {
     static unsigned short count = 0;
@@ -62,9 +70,10 @@ void loop_gcode()
         rxchar = Serial.read();
         rxchar = toupper(rxchar);
 
-        //TODO: Handle interactive stuff (escape sequences, Backspace, arrow keys, etc) here.
+        // Handle interactive stuff (escape sequences, Backspace, arrow keys, etc) here.
         switch (rxchar)
         {
+        case 0:
         case SHELL_ASCII_CR: // Enter key pressed
             buff[count] = '\0';
             Serial.println("");
@@ -97,7 +106,6 @@ void loop_gcode()
         if (finished)
         {
             // When an EOL is encountered, enqueue the buffer as an instruction.
-
             finished = 0;
             count = 0;
             //we need to make a copy, since we are enqueueing a reference, and we want to reuse buff.
@@ -109,7 +117,10 @@ void loop_gcode()
     }
     else
     {
-        Serial.println("ok //Command ignored. System stopping (M0)");
+        if (finished)
+        {
+            Serial.println("ok //Command ignored. System stopping (M0)");
+        }
     }
 
     // Part 2: Dequeue one instruction (if available), and process it.
@@ -121,7 +132,7 @@ void loop_gcode()
             {
                 //pop off the queue
                 char *instruction = queue.pop();
-                execute(instruction);
+                execute_gcode(instruction);
                 //Don't forget to free!
                 free(instruction);
             }
@@ -144,11 +155,14 @@ void loop_gcode()
         //robot not ready.
     }
 }
-// Note: This function returns a pointer to a substring of the original string.
-// If the given string was allocated dynamically, the caller must not overwrite
-// that pointer with the returned value, since the original pointer must be
-// deallocated using the same allocator with which it was allocated.  The return
-// value must NOT be deallocated using free() etc.
+
+/**
+ *  returns a pointer to a substring of the original string.
+ * If the given string was allocated dynamically, the caller must not overwrite
+ * that pointer with the returned value, since the original pointer must be
+ * deallocated using the same allocator with which it was allocated.  The return
+ * value must NOT be deallocated using free() etc.
+ **/
 char *trimwhitespace(char *str)
 {
     char *end;
@@ -171,7 +185,7 @@ char *trimwhitespace(char *str)
     return str;
 }
 
-int execute(char *instruction)
+int execute_gcode(char *instruction)
 {
     //parse the instruction, and dispatch to a handler.
     char *buf = trimwhitespace(instruction);
@@ -196,7 +210,7 @@ int execute(char *instruction)
             }
             else
             {
-                return execute(buf); //recurse, but without the line number.
+                return execute_gcode(buf); //recurse, but without the line number.
             }
             break;
         case 'G':
@@ -205,7 +219,7 @@ int execute(char *instruction)
             //M Code
         default:
             char *argv_list[CONFIG_SHELL_MAX_COMMAND_ARGS];
-            int argc = parse(buf, argv_list);
+            int argc = parse_gcode(buf, argv_list);
 
             if (argc > 0)
             {
@@ -227,6 +241,7 @@ int execute(char *instruction)
 }
 
 int parse(char *buf, char **argv)
+int parse_gcode(char *buf, char **argv)
 {
     int i = 0;
     int argc = 0;
@@ -285,13 +300,13 @@ int parse(char *buf, char **argv)
  *    X: End effector X coordinate in the world frame.
  *    Y: End effector X coordinate in the world frame.
  *    Z: End effector Z coordinate in the world frame.
- *    U: End effector Yaw angle (in degrees)
- *    V: End effector Pitch angle (in degrees)
- *    W: End effector Roll angle (in degrees)
+ *    A: End effector Yaw angle (in degrees)
+ *    B: End effector Pitch angle (in degrees)
+ *    C: End effector Roll angle (in degrees)
  * 
  * All Axis parameters are optional. (Though if you don't provide any at all, the robot will not move.)
  * 
- * Example: G0 X7 Y18 Z150 U12 V-50 W0
+ * Example: G0 X7 Y18 Z150 A12 B-50 C0
  **/
 
 int handleMove(int argc, char **argv)
@@ -326,17 +341,17 @@ int handleMove(int argc, char **argv)
             target.z = atof(&argv[i][1]);
             bCh = true;
         }
-        else if (argv[i][0] == 'U')
+        else if (argv[i][0] == 'A')
         {
             target.yaw = atof(&argv[i][1]);
             bCh = true;
         }
-        else if (argv[i][0] == 'V')
+        else if (argv[i][0] == 'B')
         {
             target.pitch = atof(&argv[i][1]);
             bCh = true;
         }
-        else if (argv[i][0] == 'W')
+        else if (argv[i][0] == 'C')
         {
             target.roll = atof(&argv[i][1]);
             bCh = true;
@@ -344,7 +359,6 @@ int handleMove(int argc, char **argv)
         else if (argv[i][0] == 'F')
         {
             speed = (float)atof(&argv[i][1]);
-            speed = min(1.0f, max(0.0f, speed));
             bCh = true;
         }
         else
@@ -382,7 +396,7 @@ int handleMove(int argc, char **argv)
     return SHELL_RET_FAILURE;
 }
 
-int handleRapidMove(int argc, char **argv) // G00
+int handleRapidMove(int argc, char **argv) // G01
 {
     return handleMove(argc, argv);
 }
@@ -408,9 +422,9 @@ int handleControlledMove(int argc, char **argv) // G01
  * Xnnn The position to move to on the X axis
  * Ynnn The position to move to on the Y axis
  * Znnn The position to move to on the Z axis
- * Unnn Target yaw
- * Vnnn Target pitch
- * Wnnn Target roll
+ * Annn Target yaw
+ * Bnnn Target pitch
+ * Cnnn Target roll
  * Innn The point in X space from the current X position to maintain a constant distance from
  * Jnnn The point in Y space from the current Y position to maintain a constant distance from
  * Knnn The point in Z space from the current Z position to maintain a constant distance from
@@ -430,9 +444,9 @@ int handleCircleMoveCW(int argc, char **argv) // G02
  *    Xnnn The position to move to on the X axis
  *    Ynnn The position to move to on the Y axis
  *    Znnn The position to move to on the Z axis
- *    Unnn Target yaw
- *    Vnnn Target pitch
- *    Wnnn Target roll
+ *    Annn Target yaw
+ *    Bnnn Target pitch
+ *    Cnnn Target roll
  *    Innn The point in X space from the current X position to maintain a constant distance from
  *    Jnnn The point in Y space from the current Y position to maintain a constant distance from
  *    Knnn The point in Z space from the current Z position to maintain a constant distance from
@@ -504,18 +518,57 @@ int handleMillimeters(int argc, char **argv) // G21
 }
 
 /**
+ * The G28 code treats XYZ/ABC coordinates slightly differently than other "Move" codes. 
+ * Normally (such as in G0 or G1) these coordinates would refer to the pose of the end 
+ * effector's frame origin, relative to the world frame origin. In the case of G28, we 
+ * don't care about the location of the end effector, as much as we care about the 
+ * location of individual joints, so X refers to J1, Y refers to J2, Z refers to 
+ * J3, and so on.
+ * 
  * Parameters:
- *    This command can be used without any additional parameters.
- *    X Flag to go back to the X axis origin
- *    Y Flag to go back to the Y axis origin
- *    Z Flag to go back to the Z axis origin
- *    U Flag to go back to the yaw origin
- *    V Flag to go back to the pitch origin
- *    W Flag to go back to the roll origin
+ *  This command can be used without any additional parameters. 
+ *    X Flag to move J1 to its minimum end-stop position.
+ *    Y Flag to move J2 to its minimum end-stop position.
+ *    Z Flag to move J3 to its minimum end-stop position.
+ *    A Flag to move J4 to its minimum end-stop position.
+ *    B Flag to move J5 to its minimum end-stop position.
+ *    C Flag to move J6 to its minimum end-stop position.
  **/
 int handleHome(int argc, char **argv) // G28
 {
-    move_home();
+    bool x, y, z, a, b, c;
+    if (argc > 1)
+    {
+        //parse parameters
+        for (int i = 0; i < argc; i++)
+        {
+            switch (argv[i][0])
+            {
+            case 'X':
+                x = true;
+                break;
+            case 'Y':
+                y = true;
+                break;
+            case 'Z':
+                z = true;
+                break;
+            case 'A':
+                a = true;
+                break;
+            case 'B':
+                b = true;
+                break;
+            case 'C':
+                c = true;
+                break;
+            default:
+                //ignore.
+                break;
+            }
+        }
+    }
+    safe_zero(x, y, z, a, b, c);
     Serial.println("ok //G28: Homing.");
     return SHELL_RET_SUCCESS;
 }
@@ -588,7 +641,7 @@ int handleSetMaximum(int argc, char **argv) // G162
 
 int handleSetPosition(int argc, char **argv) //G92
 {
-    if (argc == 0)
+    if (argc == 1)
     {
         //set current position as the zero point.
         for (int i = 0; i < MOTOR_COUNT; i++)
@@ -600,6 +653,7 @@ int handleSetPosition(int argc, char **argv) //G92
     {
         Serial.println("ok //G92: Not yet supported.");
     }
+    return SHELL_RET_SUCCESS;
 }
 
 int handleStop(int argc, char **argv) // M00
@@ -652,9 +706,18 @@ int handlePush(int argc, char **argv) // M120
         movement_mode,
         current_frame,
         unit};
-    stack.push(e);
-    Serial.println("ok //M120 Stack push complete.");
-    return SHELL_RET_SUCCESS;
+    if (stack.count < CONFIG_MAX_STACK_DEPTH)
+    {
+
+        stack.push(e);
+        Serial.println("ok //M120 Stack push complete.");
+        return SHELL_RET_SUCCESS;
+    }
+    else
+    {
+        Serial.println("!! //M120 Maximum stack depth exceeded.");
+        return SHELL_RET_FAILURE;
+    }
 }
 
 int handlePop(int argc, char **argv) // M121
@@ -681,6 +744,7 @@ int handlePop(int argc, char **argv) // M121
         Serial.println("ok //M121 State pop complete.");
         return SHELL_RET_SUCCESS;
     }
+    Serial.println("!! //M121 State stack is empty.");
     return SHELL_RET_FAILURE;
 }
 
@@ -691,10 +755,10 @@ int handleSetHome(int argc, char **argv) // M306
         //parse parameters
         for (int i = 0; i < argc; i++)
         {
-            if (argv[i][0] == 'J') //we only handle the first J parameter we ome across.
+            if (argv[i][0] == 'J') //we only handle the first J parameter we come across.
             {
                 int joint_num = atoi(&argv[1][1]);
-                jointConfig[joint_num].homePosition = motors[joint_num]->getPosition();
+                jointConfig[joint_num].minPosition = motors[joint_num]->getPosition(); // min = home.
                 Serial.printf("ok //M306: New home set for joint #%d.\n", joint_num);
                 return SHELL_RET_SUCCESS;
             }
@@ -704,7 +768,7 @@ int handleSetHome(int argc, char **argv) // M306
     //no J parameters.
     for (int i = 0; i < MOTOR_COUNT; i++)
     {
-        jointConfig[i].homePosition = motors[i]->getPosition();
+        jointConfig[i].minPosition = motors[i]->getPosition(); // min = home.
     }
     Serial.println("ok //M306: New home set.");
     return SHELL_RET_SUCCESS;
