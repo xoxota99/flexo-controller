@@ -29,6 +29,8 @@ enum movementMode_t
 
 #include "flexo.h"
 
+#define HOMING_SPEED_REL 0.1f //relative homing speed for joints (as a ratio of maxSpeed)
+
 #define FOREACH_ERROR(MODE)                                                                                      \
   MODE(ERR_SUCCESS /* The command was successful. */)                                                            \
   MODE(ERR_RESULT_OUTSIDE_WORKSPACE /* The result of movement places the end effector outside the workspace.*/)  \
@@ -55,9 +57,9 @@ typedef struct
    **/
   int32_t maxPosition;
   /**
-   * Home position (in steps).
+   * Home position (in steps). DEPRECATED. This is the min position (until I think of a good reason why it shouldn't be. Maybe it screws with the IK solver?)
    **/
-  int32_t homePosition;
+  // int32_t homePosition;
   /**
    * Allowed acceleration during move commands (in steps).
    **/
@@ -92,17 +94,18 @@ typedef struct
    **/
   byte stepPin;
   /**
-   * DEPRECATED: The Chip select pin for this joint's encoder.
+   * The GPIO Pin for this joint's limit switch (if any). This pin will be pulled 
+   * LOW when the limit switch is engaged. Set to -1 to disable.
    **/
-  byte csPin;
+  byte limitPin;
+  /**
+   * Limit pin active (HIGH / LOW).
+   **/
+  bool limitPinActive;
   /**
    * Number of steps per revolution of the motor, ignoring the gear ratio. Used for configuration of microstepping.
    **/
   unsigned int stepsPerRev;
-  /**
-   * DEPRECATED: Allow this motor to start up unsafely (that is, without following the system homing procedure).
-   **/
-  bool unsafeStartup;
 } jointConfig_t;
 
 /**
@@ -111,7 +114,7 @@ typedef struct
 extern frame_t current_frame;
 
 /**
- * The "home" pose, in the world frame. USeful when we want to tell the robot to "go home".
+ * The "home" pose, in the world frame. Useful when we want to tell the robot to "go home".
  **/
 extern const frame_t home_frame;
 
@@ -129,10 +132,15 @@ extern movementMode_t movement_mode;
 extern jointConfig_t jointConfig[];
 
 extern Stepper *motors[MOTOR_COUNT];
-extern StepControl<> controller;
+extern StepControl controller;
 
 void setup_joints();
 void loop_joints();
+
+/**
+ * Move all joints to their minimums (one at a time, starting with J6), stopping when limit switches are hit.
+ **/
+void initialize_joint_stop();
 
 /**
  * Given an end-effector pose, initiate movement of all the joints of the robot, to move the end-effector to the desired pose.
@@ -142,15 +150,22 @@ void loop_joints();
 bool move_linear(frame_t position, float speed = 1.0f);
 bool move_linear(double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta, float speed = 1.0f);
 
-bool move_home(float speed = 1.0f);
+/**
+ * Move specified joints to their minimum limits. Each joint is moved separately, starting with J6, down to J1. 
+ * Joints will stop moving when they hit their limit switches, then move forward slightly until the limit 
+ * switch is no longer depressed.
+ * 
+ * Calling this function with no parameters will home all joints at the speed defined in HOMING_SPEED_REL.
+ **/
+void safe_zero(bool j1 = true, bool j2 = true, bool j3 = true, bool j4 = true, bool j5 = true, bool j6 = true, float speed = HOMING_SPEED_REL);
 
 /**
 * Jog a given joint by a given angle (in degrees), in the given direction. Movement may be relative or absolute.
 *
-* Return: True if the momvent was successful. False if the movement was not successful.
+* Return: True if the movement was successful. False if the movement was not successful.
 **/
-bool move_joints(int idx, double theta);
-bool move_joints(double *theta);
+bool move_joints(int idx, double theta, float speed = 1.0f);
+bool move_joints(bool *shouldMove, double *theta, float speed = 1.0f);
 
 bool move_circular(frame_t position, float speed = 1.0f);
 
