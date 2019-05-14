@@ -26,7 +26,7 @@
 
 // Define standard libraries used by Flexo.
 #include <Arduino.h>
-#include <StepControl.h>
+#include <TeensyStep.h>
 
 #include "uptime.h" //uptime utility
 #include "reset.h"  //reset utility
