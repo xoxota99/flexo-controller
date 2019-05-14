@@ -51,10 +51,10 @@
 #define PIN_STEP_6 10
 #define PIN_CS_6 22
 
-#define PIN_MOSI 11
-#define PIN_MISO 12
-#define PIN_SCK 13
-#define PIN_ENABLE 23
+// #define PIN_MOSI 11
+// #define PIN_MISO 12
+// #define PIN_SCK 13
+// #define PIN_ENABLE 23
 
 #endif //CPU_MAP_TEENSY_3_2
 

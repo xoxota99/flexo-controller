@@ -20,9 +20,9 @@
 
 //TODO: This entire GCode implementation is just awful. Replace it with GRBL if possible.
 
-#ifndef __GCODE_OLD_H__
+#ifndef __GCODE_H__
 
-#define __GCODE_OLD_H__
+#define __GCODE_H__
 
 #define CONFIG_MAX_STACK_DEPTH 5         //Stack depth for GCode Push / pop operations (M120 / M121)
 #define CONFIG_SHELL_MAX_INPUT 80        //how many characters max per line of serial input?
@@ -102,6 +102,7 @@ int handleHome(int argc, char **argv);           // G28
 int handleAbsolute(int argc, char **argv);       // G90
 int handleRelative(int argc, char **argv);       // G91
 int handleSetPosition(int argc, char **argv);    // G92
+int handleJog(int argc, char **argv);            // G999
 
 // MCode
 /**
@@ -175,6 +176,7 @@ const command_t commands[] = {
     {handleSetPosition, "G92"},
     {handleSetMinimum, "G161"},
     {handleSetMaximum, "G162"},
+    {handleJog, "G999"}, //TODO: Find a better GCODE than this.
     {handleStop, "M00"},
     {handleStop, "M0"},
     {handleEmergencyStop, "M112"},
@@ -186,4 +188,4 @@ const command_t commands[] = {
     {handlePop, "M121"},
     {handleSetHome, "M306"}};
 
-#endif //__GCODE2_H__
+#endif //__GCODE_H__

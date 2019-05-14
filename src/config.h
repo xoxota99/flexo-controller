@@ -32,7 +32,8 @@
 #define FOREACH_RUNSTATE(MODE) \
   MODE(STARTUP)                \
   MODE(CALIBRATING)            \
-  MODE(RUNNING)                \
+  MODE(READY)                  \
+  MODE(HALTED)                 \
   MODE(SHUTDOWN)
 
 #define GENERATE_ENUM(ENUM) ENUM,
