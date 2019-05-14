@@ -42,20 +42,16 @@
 Stack<stack_entry_t> stack = Stack<stack_entry_t>(CONFIG_MAX_STACK_DEPTH);
 char buff[CONFIG_SHELL_MAX_INPUT];
 unit_t unit;
+int gcode_line_num = 0;
 
 bool bStopRequested = false;
+
+char *argv_list[CONFIG_SHELL_MAX_COMMAND_ARGS]; //reuse array of string pointers.
 
 void setup_gcode(int bps)
 {
     Serial.begin(bps);
 }
-
-//TODO: Can we replace this with serialEvent()?
-/**
- * TODO: Should this be synchronous (ie: eliminate the queueing 
- * mechanism for incoming commands, but still process other events 
- * (Such as LED blinks))?
- **/
 
 // Read -> Parse -> Execute(GCODE | NON-GCODE)
 void loop_gcode()
@@ -92,7 +88,7 @@ void loop_gcode()
             break;
 
         default:
-            if (count < CONFIG_SHELL_MAX_INPUT && rxchar >= 0x20 && rxchar < 0x7F)
+            if (count < CONFIG_SHELL_MAX_INPUT && rxchar >= 0x20 && rxchar < 0x7F) // alphanumeric
             {
                 buff[count] = rxchar;
                 Serial.write(rxchar); //echo back.
@@ -101,18 +97,30 @@ void loop_gcode()
         }
     }
 
-    if (!bStopRequested)
+    if (!bStopRequested) // A previous command has requested a stop of the robot, so ignore any subsequent commands.
     {
-        if (finished)
+        if (finished) // we have finished reading the command "Sentence".
         {
-            // When an EOL is encountered, enqueue the buffer as an instruction.
             finished = 0;
             count = 0;
-            //we need to make a copy, since we are enqueueing a reference, and we want to reuse buff.
-            char *copy = (char *)malloc(sizeof(char) * CONFIG_SHELL_MAX_INPUT);
-            strncpy(copy, buff, CONFIG_SHELL_MAX_INPUT);
-            queue.push(copy);
-            Serial.println("ok");
+            if (runState == READY)
+            {
+                if (!controller.isRunning())
+                {
+                    //parse
+                    execute_gcode(buff);
+                }
+                else //!controller.isRunning()
+                {
+                    //already moving
+                    Serial.println("ok //Command ignored. Robot is already moving", buff);
+                }
+            }
+            else //runState != READY
+            {
+                //robot not ready.
+                Serial.println("ok //Command ignored. Robot is in state %s", buff, runStateNames[runState]);
+            }
         }
     }
     else
@@ -121,38 +129,6 @@ void loop_gcode()
         {
             Serial.println("ok //Command ignored. System stopping (M0)");
         }
-    }
-
-    // Part 2: Dequeue one instruction (if available), and process it.
-    if (runState == RUNNING)
-    {
-        if (!controller.isRunning())
-        {
-            if (queue.count() > 0)
-            {
-                //pop off the queue
-                char *instruction = queue.pop();
-                execute_gcode(instruction);
-                //Don't forget to free!
-                free(instruction);
-            }
-            else
-            {
-                if (bStopRequested)
-                {
-                    runState = SHUTDOWN;
-                    Serial.println("//M0: Shutting down...");
-                }
-            }
-        }
-        else
-        {
-            //already moving
-        }
-    }
-    else
-    {
-        //robot not ready.
     }
 }
 
@@ -185,6 +161,9 @@ char *trimwhitespace(char *str)
     return str;
 }
 
+/**
+ * parse, then execute the raw buffer.
+ **/
 int execute_gcode(char *instruction)
 {
     //parse the instruction, and dispatch to a handler.
@@ -240,8 +219,10 @@ int execute_gcode(char *instruction)
     return SHELL_RET_FAILURE;
 }
 
-int parse(char *buf, char **argv)
-int parse_gcode(char *buf, char **argv)
+/**
+ * Take in a string, and return an array of argument strings, and an integer count of arguments.
+ **/
+int parse_gcode(char *buf, char *argv[])
 {
     int i = 0;
     int argc = 0;
@@ -368,7 +349,7 @@ int handleMove(int argc, char **argv)
         }
     }
 
-    if (bCh)
+    if (bCh) //at least one parameter was provided
     {
         if (unit == INCH)
         {
@@ -394,6 +375,81 @@ int handleMove(int argc, char **argv)
         return SHELL_RET_SUCCESS;
     }
     return SHELL_RET_FAILURE;
+}
+
+/**
+ * G999 - Move individual joints by a specific angle in degrees, according to the current movement mode.
+ * 
+ * When the movement mode is RELATIVE, move each specified joint by an angle in degrees.
+ * 
+ * When the movement mode is ABSOLUTE, move each specified joint to an angle in degrees.
+ * 
+ * All parameters are optional.
+ * Parameters:
+ * A - Joint 1 steps
+ * B - Joint 2 steps
+ * C - Joint 3 steps
+ * D - Joint 4 steps
+ * E - Joint 5 steps
+ * F - Joint 6 steps
+ * 
+ **/
+
+int handleJog(int argc, char **argv)
+{
+    bool shouldMove[6];
+    double thetas[6];
+    for (int i = 1; i < argc; i++)
+    {
+        switch (argv[i][0])
+        {
+        case 'A':
+            thetas[0] = atof(&argv[i][1]);
+            shouldMove[0] = true;
+            break;
+        case 'B':
+            thetas[0] = atof(&argv[i][1]);
+            shouldMove[1] = true;
+            break;
+        case 'C':
+            thetas[0] = atof(&argv[i][1]);
+            shouldMove[2] = true;
+            break;
+        case 'D':
+            thetas[0] = atof(&argv[i][1]);
+            shouldMove[3] = true;
+            break;
+        case 'E':
+            thetas[0] = atof(&argv[i][1]);
+            shouldMove[4] = true;
+            break;
+        case 'F': // F is usually relative speed.
+            thetas[0] = atof(&argv[i][1]);
+            shouldMove[5] = true;
+            break;
+        default:
+            break;
+        }
+    }
+    if (shouldMove[0] || shouldMove[1] || shouldMove[2] || shouldMove[3] || shouldMove[4] || shouldMove[5])
+    {
+        if (move_joints(shouldMove, thetas))
+        {
+            Serial.println("ok // G999");
+            return SHELL_RET_SUCCESS;
+        }
+        else
+        {
+            Serial.println("ok // G999 - MOVEMENT FAILED.");
+            return SHELL_RET_FAILURE;
+        }
+    }
+    else
+    {
+        // No parameters. Do nothing.
+        Serial.println("ok // G999 - Movement aborted: No parameters provided.");
+        return SHELL_RET_FAILURE;
+    }
 }
 
 int handleRapidMove(int argc, char **argv) // G01
@@ -706,7 +762,7 @@ int handlePush(int argc, char **argv) // M120
         movement_mode,
         current_frame,
         unit};
-    if (stack.count < CONFIG_MAX_STACK_DEPTH)
+    if (stack.count() < CONFIG_MAX_STACK_DEPTH)
     {
 
         stack.push(e);
