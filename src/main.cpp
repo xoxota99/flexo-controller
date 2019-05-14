@@ -38,32 +38,32 @@ run_state_t runState = STARTUP;
 
 void setup()
 {
+  // TODO: Here, setup_joints automatically zeros the physical robot. we should instead
+  // block on some trigger from the user, for safety.
   setup_joints();
   setup_gcode();
   setup_led();
 
-  //Wait for user input
-  //Move to home position (at low speed), and set joint_position values
-  for (int i = 0; i < MOTOR_COUNT; i++)
-  {
-    motors[i]->setTargetAbs(jointConfig[i].homePosition);
-  }
-  controller.move(motors, 0.25f);
-
   //TODO: Set joint position state, based on known "home" motor values.
-  controller.isRunning();
   //TODO: use IKSolver to set current_frame
 
-  runState = RUNNING;
+  runState = READY;
 }
 
 void loop()
 {
-  loop_joints();
+  if (runState != HALTED && runState != SHUTDOWN)
+  {
+    loop_joints();
 
-  // loop_endpoint();
-  loop_gcode();
-  loop_led();
+    // loop_endpoint();
+    loop_gcode();
+    loop_led();
+  }
+  else
+  {
+    //TODO: Set LED to blink pattern for shutdown.
+  }
 }
 
 //=====
