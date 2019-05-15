@@ -25,6 +25,8 @@
 #define CPU_MAP_TEENSY_3_2 // What CPU pin mapping should we use?
 #define MOTOR_COUNT 6      // How many motors do we have?
 
+// #define LIMIT_SWITCHES_SUPPORTED //defined when limit switches are supported and enabled on all motors.
+
 #define FIRMWARE_VERSION "0.1"
 #define FIRMWARE_URL "https://github.com/xoxota99/flexo-controller"
 #define MACHINE_TYPE "Flexo"
@@ -49,7 +51,7 @@ typedef struct
   double yaw;
   double pitch;
   double roll;
-} frame_t;
+} frame_t; // cartesian / euler reference frame.
 
 enum run_state_t
 {

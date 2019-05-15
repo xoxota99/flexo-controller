@@ -45,7 +45,7 @@ void setup()
   setup_led();
 
   //TODO: Set joint position state, based on known "home" motor values.
-  //TODO: use IKSolver to set current_frame
+  //TODO: use IKSolver to set ee_frame
 
   runState = READY;
 }

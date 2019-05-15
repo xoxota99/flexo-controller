@@ -69,7 +69,7 @@ typedef struct
 typedef struct
 {
   movementMode_t movement_mode;
-  frame_t current_frame;
+  frame_t ee_frame;
   unit_t unit;
 } stack_entry_t;
 

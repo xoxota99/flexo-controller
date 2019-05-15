@@ -36,7 +36,8 @@ enum movementMode_t
   MODE(ERR_RESULT_OUTSIDE_WORKSPACE /* The result of movement places the end effector outside the workspace.*/)  \
   MODE(ERR_RESULT_SINGULARITY /* Movement calculations result in an impossible pose (NaN, or other result) */)   \
   MODE(ERR_BAD_RUN_STATE /* Robot is in a state that does not support movement (such as STARTUP or SHUTDOWN) */) \
-  MODE(ERR_MOVEMENT_IN_PROGRESS /* The robot is already moving, so this command has been ignored. */)
+  MODE(ERR_MOVEMENT_IN_PROGRESS /* The robot is already moving, so this command has been ignored. */)            \
+  MODE(ERR_IO_TIMEOUT /* Limit switches flapped / bounced for longer than the maximum timeout */)
 
 enum error_t
 {
@@ -111,7 +112,7 @@ typedef struct
 /**
  * The current X/Y/Z/Yaw/Pitch/Roll of the tool end effector, in the world frame (in millimeters and degrees)
  **/
-extern frame_t current_frame;
+extern frame_t ee_frame;
 
 /**
  * The "home" pose, in the world frame. Useful when we want to tell the robot to "go home".
@@ -150,6 +151,7 @@ void initialize_joint_stop();
 bool move_linear(frame_t position, float speed = 1.0f);
 bool move_linear(double x_pos, double y_pos, double z_pos, double roll_theta, double pitch_theta, double yaw_theta, float speed = 1.0f);
 
+#ifdef LIMIT_SWITCHES_SUPPORTED
 /**
  * Move specified joints to their minimum limits. Each joint is moved separately, starting with J6, down to J1. 
  * Joints will stop moving when they hit their limit switches, then move forward slightly until the limit 
@@ -157,7 +159,8 @@ bool move_linear(double x_pos, double y_pos, double z_pos, double roll_theta, do
  * 
  * Calling this function with no parameters will home all joints at the speed defined in HOMING_SPEED_REL.
  **/
-void safe_zero(bool j1 = true, bool j2 = true, bool j3 = true, bool j4 = true, bool j5 = true, bool j6 = true, float speed = HOMING_SPEED_REL);
+bool safe_zero(bool j1 = true, bool j2 = true, bool j3 = true, bool j4 = true, bool j5 = true, bool j6 = true, float speed = HOMING_SPEED_REL);
+#endif
 
 /**
 * Jog a given joint by a given angle (in degrees), in the given direction. Movement may be relative or absolute.

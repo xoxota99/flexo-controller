@@ -29,27 +29,27 @@
 
 #define PIN_DIR_1 2
 #define PIN_STEP_1 3
-#define PIN_CS_1 17
+#define PIN_LIMIT_1 17
 
 #define PIN_DIR_2 7
 #define PIN_STEP_2 4
-#define PIN_CS_2 18
+#define PIN_LIMIT_2 18
 
 #define PIN_DIR_3 8
 #define PIN_STEP_3 5
-#define PIN_CS_3 19
+#define PIN_LIMIT_3 19
 
 #define PIN_DIR_4 14
 #define PIN_STEP_4 6
-#define PIN_CS_4 20
+#define PIN_LIMIT_4 20
 
 #define PIN_DIR_5 15
 #define PIN_STEP_5 9
-#define PIN_CS_5 21
+#define PIN_LIMIT_5 21
 
 #define PIN_DIR_6 16
 #define PIN_STEP_6 10
-#define PIN_CS_6 22
+#define PIN_LIMIT_6 22
 
 // #define PIN_MOSI 11
 // #define PIN_MISO 12

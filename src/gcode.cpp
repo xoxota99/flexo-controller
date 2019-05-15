@@ -113,13 +113,13 @@ void loop_gcode()
                 else //!controller.isRunning()
                 {
                     //already moving
-                    Serial.println("ok //Command ignored. Robot is already moving", buff);
+                    Serial.println("ok //Command ignored. Robot is already moving");
                 }
             }
             else //runState != READY
             {
                 //robot not ready.
-                Serial.println("ok //Command ignored. Robot is in state %s", buff, runStateNames[runState]);
+                Serial.printf("ok //Command ignored. Robot is in state %s", runStateNames[runState]);
             }
         }
     }
@@ -299,7 +299,7 @@ int handleMove(int argc, char **argv)
     // joint when moving simultaneously with other joints. We need a mathematical approach
     // to determining realtime acceleration and top speed, on a per-command basis.
 
-    frame_t target = current_frame;
+    frame_t target = ee_frame;
 
     float speed = 1.0;
     bool bCh = false;
@@ -386,54 +386,56 @@ int handleMove(int argc, char **argv)
  * 
  * All parameters are optional.
  * Parameters:
- * A - Joint 1 steps
- * B - Joint 2 steps
- * C - Joint 3 steps
- * D - Joint 4 steps
- * E - Joint 5 steps
- * F - Joint 6 steps
- * 
+ *    X Angle (in degrees) to move J1.
+ *    Y Angle (in degrees) to move J2.
+ *    Z Angle (in degrees) to move J3.
+ *    A Angle (in degrees) to move J4.
+ *    B Angle (in degrees) to move J5.
+ *    C Angle (in degrees) to move J6.
+ *    F Relative speed (from 0.0 to 0.1).
  **/
 
 int handleJog(int argc, char **argv)
 {
     bool shouldMove[6];
-    double thetas[6];
+    double thetas[6], speed;
     for (int i = 1; i < argc; i++)
     {
         switch (argv[i][0])
         {
-        case 'A':
+        case 'X':
             thetas[0] = atof(&argv[i][1]);
             shouldMove[0] = true;
             break;
-        case 'B':
+        case 'Y':
             thetas[0] = atof(&argv[i][1]);
             shouldMove[1] = true;
             break;
-        case 'C':
+        case 'Z':
             thetas[0] = atof(&argv[i][1]);
             shouldMove[2] = true;
             break;
-        case 'D':
+        case 'A':
             thetas[0] = atof(&argv[i][1]);
             shouldMove[3] = true;
             break;
-        case 'E':
+        case 'B':
             thetas[0] = atof(&argv[i][1]);
             shouldMove[4] = true;
             break;
-        case 'F': // F is usually relative speed.
+        case 'C':
             thetas[0] = atof(&argv[i][1]);
             shouldMove[5] = true;
             break;
+        case 'F':
+            speed = atof(&argv[i][1]);
         default:
             break;
         }
     }
     if (shouldMove[0] || shouldMove[1] || shouldMove[2] || shouldMove[3] || shouldMove[4] || shouldMove[5])
     {
-        if (move_joints(shouldMove, thetas))
+        if (move_joints(shouldMove, thetas, speed))
         {
             Serial.println("ok // G999");
             return SHELL_RET_SUCCESS;
@@ -624,7 +626,11 @@ int handleHome(int argc, char **argv) // G28
             }
         }
     }
+#ifdef LIMIT_SWITCHES_SUPPORTED
     safe_zero(x, y, z, a, b, c);
+#else
+    unsafe_zero(x, y, z, a, b, c);
+#endif
     Serial.println("ok //G28: Homing.");
     return SHELL_RET_SUCCESS;
 }
@@ -731,7 +737,7 @@ int handleEmergencyStop(int argc, char **argv) // M112
 
 int handleGetPosition(int argc, char **argv) // M114
 {
-    Serial.printf("ok X:%8.4f Y:%8.4f Z:%8.4f U:%8.4f V:%8.4f W:%8.4f\n", current_frame.x, current_frame.y, current_frame.z, current_frame.yaw, current_frame.pitch, current_frame.roll);
+    Serial.printf("ok X:%8.4f Y:%8.4f Z:%8.4f U:%8.4f V:%8.4f W:%8.4f\n", ee_frame.x, ee_frame.y, ee_frame.z, ee_frame.yaw, ee_frame.pitch, ee_frame.roll);
     return SHELL_RET_SUCCESS;
 }
 
@@ -756,11 +762,11 @@ int handlePush(int argc, char **argv) // M120
 {
     //push some state on to the stack.
     //movementMode
-    //current_frame
+    //ee_frame
     //units
     stack_entry_t e = {
         movement_mode,
-        current_frame,
+        ee_frame,
         unit};
     if (stack.count() < CONFIG_MAX_STACK_DEPTH)
     {
@@ -780,7 +786,7 @@ int handlePop(int argc, char **argv) // M121
 {
     //pop state off the stack, and move the robot.
     //movementMode
-    //current_frame
+    //ee_frame
     //units
     if (stack.count() > 0)
     {
@@ -792,7 +798,7 @@ int handlePop(int argc, char **argv) // M121
         movement_mode = e.movement_mode;
         unit = e.unit;
 
-        move_linear(e.current_frame);
+        move_linear(e.ee_frame);
         while (controller.isRunning())
         {
             delay(1); //wait for motors to stop moving.

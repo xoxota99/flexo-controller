@@ -33,7 +33,7 @@ const frame_t home_frame = {
 
 const char *errorNames[] = {FOREACH_ERROR(GENERATE_STRING)};
 
-frame_t current_frame;
+frame_t ee_frame; //end effector frame.
 double joint_position[6];
 error_t joint_movement_error;
 movementMode_t movement_mode = ABSOLUTE;
@@ -69,7 +69,7 @@ jointConfig_t jointConfig[] = {
      gearRatio : 0.2250f, //19:80
      dirPin : PIN_DIR_1,
      stepPin : PIN_STEP_1,
-     limitPin : PIN_CS_1,
+     limitPin : PIN_LIMIT_1,
      limitPinActive : LOW,
      stepsPerRev : 1600},
     {minPosition : 0,
@@ -83,7 +83,7 @@ jointConfig_t jointConfig[] = {
      gearRatio : 0.02127659574f, //1:47
      dirPin : PIN_DIR_2,
      stepPin : PIN_STEP_2,
-     limitPin : PIN_CS_2,
+     limitPin : PIN_LIMIT_2,
      limitPinActive : LOW,
      stepsPerRev : 1600},
     {minPosition : -50,
@@ -97,7 +97,7 @@ jointConfig_t jointConfig[] = {
      gearRatio : 0.02127659574f, //1:47
      dirPin : PIN_DIR_3,
      stepPin : PIN_STEP_3,
-     limitPin : PIN_CS_3,
+     limitPin : PIN_LIMIT_3,
      limitPinActive : LOW,
      stepsPerRev : 1600},
     {minPosition : -50,
@@ -111,7 +111,7 @@ jointConfig_t jointConfig[] = {
      gearRatio : 0.266666666667f, //16:60
      dirPin : PIN_DIR_4,
      stepPin : PIN_STEP_4,
-     limitPin : PIN_CS_4,
+     limitPin : PIN_LIMIT_4,
      limitPinActive : LOW,
      stepsPerRev : 1600},
     {minPosition : -50,
@@ -125,7 +125,7 @@ jointConfig_t jointConfig[] = {
      gearRatio : 0.6f, //30:50
      dirPin : PIN_DIR_5,
      stepPin : PIN_STEP_5,
-     limitPin : PIN_CS_5,
+     limitPin : PIN_LIMIT_5,
      limitPinActive : LOW,
      stepsPerRev : 1600},
     {minPosition : -50,
@@ -139,13 +139,12 @@ jointConfig_t jointConfig[] = {
      gearRatio : 1.0f,
      dirPin : PIN_DIR_6,
      stepPin : PIN_STEP_6,
-     limitPin : PIN_CS_6,
+     limitPin : PIN_LIMIT_6,
      limitPinActive : LOW,
      stepsPerRev : 1600}};
 
 bool move_linear(frame_t position, float speed)
 {
-  speed = min(max(0.01, speed), 1.0);
   return move_linear(position.x, position.y, position.z, position.yaw, position.pitch, position.roll, speed);
 }
 
@@ -162,12 +161,12 @@ bool move_linear(double x_pos, double y_pos, double z_pos, double yaw_theta, dou
       switch (movement_mode)
       {
       case RELATIVE:
-        x = current_frame.x + x_pos;
-        y = current_frame.y + y_pos;
-        z = current_frame.z + z_pos;
-        a = current_frame.yaw + yaw_theta;
-        b = current_frame.pitch + pitch_theta;
-        c = current_frame.roll + roll_theta;
+        x = ee_frame.x + x_pos;
+        y = ee_frame.y + y_pos;
+        z = ee_frame.z + z_pos;
+        a = ee_frame.yaw + yaw_theta;
+        b = ee_frame.pitch + pitch_theta;
+        c = ee_frame.roll + roll_theta;
         break;
       case ABSOLUTE:
       default:
@@ -197,18 +196,24 @@ bool move_linear(double x_pos, double y_pos, double z_pos, double yaw_theta, dou
       for (int i = 0; i < MOTOR_COUNT; i++)
       {
         motors[i]->setTargetAbs(target[i]);
+        motors[i]->setMaxSpeed(jointConfig[i].maxSpeed * speed);
         joint_position[i] = target[i]; //TODO: Non-atomic here. It's possible to fail mid-move, and have incorrect data in joint_position. Move this to joint_loop.
       }
-      controller.moveAsync(motors);
-      // controller.moveAsync(motors, speed);
+      controller.move(motors); //blocking...
 
-      //TODO: Non-atomic here. It's possible to fail mid-move, and have incorrect data in current_frame. Move this to joint_loop.
-      current_frame.x = x;
-      current_frame.y = y;
-      current_frame.z = z;
-      current_frame.yaw = a;
-      current_frame.pitch = b;
-      current_frame.roll = c;
+      for (int i = 0; i < MOTOR_COUNT; i++)
+      {
+        motors[i]->setMaxSpeed(jointConfig[i].maxSpeed); //set speed back to normal.
+      }
+      // controller.move(motors, speed);
+
+      //TODO: Non-atomic here. It's possible to fail mid-move, and have incorrect data in ee_frame. Move this to joint_loop.
+      ee_frame.x = x;
+      ee_frame.y = y;
+      ee_frame.z = z;
+      ee_frame.yaw = a;
+      ee_frame.pitch = b;
+      ee_frame.roll = c;
 
       return true;
     }
@@ -271,8 +276,9 @@ bool move_joints(int idx, double theta, float speed)
         default:
           motors[idx]->setTargetRel(steps);
         }
-
-        controller.moveAsync(*(motors[idx]));
+        motors[idx]->setMaxSpeed(jointConfig[idx].maxSpeed * speed);
+        controller.move(*(motors[idx])); //blocking.
+        motors[idx]->setMaxSpeed(jointConfig[idx].maxSpeed);
         return true;
       }
     }
@@ -298,6 +304,7 @@ bool move_joints(int idx, double theta, float speed)
  **/
 bool move_joints(bool *shouldMove, double *theta, float speed)
 {
+  speed = fmax(fmin(speed, 1.0f), 0.0f); //clamp speed
   bool bMove = false;
   if (runState == READY)
   {
@@ -352,17 +359,24 @@ bool move_joints(bool *shouldMove, double *theta, float speed)
           default:
             motors[i]->setTargetRel(steps[i]);
           }
+          motors[i]->setMaxSpeed(jointConfig[i].maxSpeed * speed);
         }
       }
       if (bMove)
       {
-        controller.moveAsync(motors);
+        controller.move(motors); //blocking.
+        for (int i = 0; i < MOTOR_COUNT; i++)
+        {
+          motors[i]->setMaxSpeed(jointConfig[i].maxSpeed);
+        }
       }
+      joint_movement_error = ERR_SUCCESS;
       return true;
     }
     else
     {
       Logger::error("Movement aborted: Robot is already moving!");
+      joint_movement_error = ERR_MOVEMENT_IN_PROGRESS;
     }
   }
   else
@@ -382,7 +396,7 @@ bool move_joints(bool *shouldMove, double *theta, float speed)
 //       {
 //         motors[i]->setTargetAbs(jointConfig[i].homePosition);
 //       }
-//       controller.moveAsync(motors, speed);
+//       controller.move(motors, speed);    //blocking.
 //       return true;
 //     }
 //     else
@@ -410,20 +424,32 @@ void setup_joints()
 
     pinMode(jointConfig[i].limitPin, (jointConfig[i].limitPinActive ? INPUT_PULLDOWN : INPUT_PULLUP));
   }
+#ifdef LIMIT_SWITCHES_SUPPORTED
   safe_zero();
+#endif
 }
 
-void safe_zero(bool j1, bool j2, bool j3, bool j4, bool j5, bool j6, float speed)
+#ifdef LIMIT_SWITCHES_SUPPORTED
+/**
+ * Zero each motor, ONE AT A TIME, starting with j6, and ending with j1. Each 
+ * motor will move to its end-stop, then jog forward until the stop disengages, 
+ * and its position will be set to the minimum for the joint.
+ * 
+ * This method will block until all motors are zeroed.
+ **/
+bool safe_zero(bool j1, bool j2, bool j3, bool j4, bool j5, bool j6, float speed)
 {
   Logger::trace("Initializing joints to end stops");
   run_state_t oldRunState = runState;
+
   runState = CALIBRATING;
   controller.emergencyStop();            //just in case.
   speed = fmax(fmin(1.0f, speed), 0.0f); //clamp speed.
 
-  //home from j6 down to j1.
   for (int i = MOTOR_COUNT; i > 0; i--)
   {
+    //for each motor
+    //are we homing this motor?
     if ((i == 0 && j1) ||
         (i == 1 && j2) ||
         (i == 2 && j3) ||
@@ -434,81 +460,108 @@ void safe_zero(bool j1, bool j2, bool j3, bool j4, bool j5, bool j6, float speed
       motors[i]->setTargetRel(INT32_MIN); // go forever.
       //TODO: What direction is each motor moving in? Is it deterministic? Same every time? Is there some internal state?
       motors[i]->setMaxSpeed(jointConfig[i].maxSpeed * speed);
-    }
 
-    controller.moveAsync(motors);
-    // controller.moveAsync(motors, speed); // 1/10th speed.
-    while (true)
-    {
-      delay(1);
-      //check if this joint has hit its limit switch.
-      if (digitalReadFast(jointConfig[i].limitPin) == jointConfig[i].limitPinActive)
-      {
-        uint32_t startMillis = millis();
-        while (millis() - startMillis < 20) //debounce 20 ms. (too long?)
-        {
-          if (digitalReadFast(jointConfig[i].limitPin) != jointConfig[i].limitPinActive)
-          {
-            startMillis = millis(); //start over. (Risk of infinite loop).
-            // TODO: Deal with false positives (timeout?)
-          }
-          delay(1);
-        }
-        Logger::trace("Motor %d hit limit.", i);
-        controller.emergencyStop();
-        // motors[i]->setTargetAbs(motors[i]->getPosition()); //so the motor doesn't startup again when we restart the controller. Test this.
-      }
-      break; //while(true)
-    }
-  }
-
-  //all motors should be at limits now.
-  Logger::trace("All motors at limits.");
-
-  for (int i = 0; i < MOTOR_COUNT; i++)
-  {
-    if ((i == 0 && j1) ||
-        (i == 1 && j2) ||
-        (i == 2 && j3) ||
-        (i == 3 && j4) ||
-        (i == 4 && j5) ||
-        (i == 5 && j6))
-    {
-      motors[i]->setTargetRel(jointConfig[i].stepsPerRev); // one revolution forward.
-      //TODO: What direction is each motor moving in? Is it deterministic? Same every time? Is there some internal state?
-
-      controller.moveAsync(motors);
-      // controller.moveAsync(motors, HOMING_SPEED_REL); // 1/10th speed.
+      controller.moveAsync(motors); //remember, we're homing motors one at a time. So this only ever moves one motor. We move Asynchronously so we can cancel movement based on some external stimuli (the limit switch).
       while (true)
       {
         delay(1);
-        if (digitalReadFast(jointConfig[i].limitPin) != jointConfig[i].limitPinActive)
+        uint8_t state = digitalReadFast(jointConfig[i].limitPin);
+
+        //check if this joint has hit its limit switch.
+        if (state == jointConfig[i].limitPinActive)
         {
           uint32_t startMillis = millis();
-          while (millis() - startMillis < 20) //debounce 20 ms. (too long?)
+          uint32_t t0 = startMillis;
+          while (millis() - startMillis < 5 && millis() - t0 < 300) //debounce 5 ms. (too short? too long?). Timeout at 300ms.
           {
-            if (digitalReadFast(jointConfig[i].limitPin) == jointConfig[i].limitPinActive)
+            if (digitalReadFast(jointConfig[i].limitPin) != state)
             {
-              startMillis = millis(); //start over. (Risk of infinite loop).
-              // TODO: Deal with false positives (timeout?)
+              Logger::trace("debounce flap.");
+              state = digitalReadFast(jointConfig[i].limitPin);
+              startMillis = millis(); //start over.
             }
             delay(1);
           }
-          controller.emergencyStop();
-          motors[i]->setPosition(jointConfig[i].minPosition); //We're officially at minimum position now.
-          Logger::trace("Motor %d hit minimum position %d.", i, jointConfig[i].minPosition);
+          if (millis() - t0 >= 300)
+          {
+            Logger::error("Timeout debouncing Motor limit switch %d. Emergency stop.", i);
+            controller.emergencyStop();
+            runState = SHUTDOWN;
+            joint_movement_error = ERR_IO_TIMEOUT;
+            return false;
+          }
+          else if (state == jointConfig[i].limitPinActive)
+          {
+            //stop.
+            controller.emergencyStop();
+            Logger::trace("Motor %d hit limit. Moving forward.", i);
+
+            motors[i]->setTargetRel(jointConfig[i].stepsPerRev); //one revolution.
+            while (true)
+            {
+              //advance until the limit switch is no longer pressed for this motor.
+              delay(1);
+              uint8_t state = digitalReadFast(jointConfig[i].limitPin);
+
+              //check if this joint has released its limit switch.
+              if (state != jointConfig[i].limitPinActive)
+              {
+                uint32_t startMillis = millis();
+                uint32_t t0 = startMillis;
+                while (millis() - startMillis < 5 && millis() - t0 < 300) //debounce 5 ms. (too short? too long?). Timeout at 300ms.
+                {
+                  if (digitalReadFast(jointConfig[i].limitPin) != state)
+                  {
+                    Logger::trace("debounce flap.");
+                    state = digitalReadFast(jointConfig[i].limitPin);
+                    startMillis = millis(); //start over.
+                  }
+                  delay(1);
+                }
+                if (millis() - t0 >= 300)
+                {
+                  Logger::error("Timeout debouncing Motor limit switch %d. Emergency stop.", i);
+                  controller.emergencyStop();
+                  runState = SHUTDOWN;
+                  joint_movement_error = ERR_IO_TIMEOUT;
+                  return false;
+                }
+                else
+                {
+                  if (state != jointConfig[i].limitPinActive)
+                  {
+                    //stop.
+                    Logger::trace("Motor %d advanced. Limit switch released.", i);
+                    controller.emergencyStop();
+
+                    //set motor position.
+                    motors[i]->setPosition(jointConfig[i].minPosition);
+                    //finally, set the motor's max speed back to its intended value.
+                    motors[i]->setMaxSpeed(jointConfig[i].maxSpeed);
+                    break;
+                  }
+                  else
+                  {
+                    Logger::trace("Motor %d false alarm (no limit hit). Continuing.");
+                  }
+                }
+              }
+            } //while true
+          }   // no timeout, but we somehow exited the debounce loop without activating the limit switch, so just keep going...
         }
-        break; //while(true)
-      }
+      } //while true
     }
-  }
-  Logger::trace("Homing complete.");
+  } //foreach motor [6..1]
   runState = oldRunState;
+  joint_movement_error = ERR_SUCCESS;
+  return true;
 }
+
+#endif //LIMIT_SWITCHES_SUPPORTED
 
 void loop_joints()
 {
-  //If a joint has hit it's end stop, we will e-stop the machine and require a restart / recalibration.
+  //If a joint has hit its end stop, we will e-stop the machine and require a restart / recalibration.
   if (runState != CALIBRATING)
   {
     //TODO: We could do this faster here by reading a PORT register or something, since we only care if at least ONE pin is low.
