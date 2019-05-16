@@ -35,11 +35,10 @@
 #include "Logger.h" //Logging capability
 
 // Define the Flexo system include files. The order is important.
-#include "config.h"    //configuration
-#include "cpu_map.h"   //pin map configuration
-#include "joint.h"     //Joint management
-#include "ik_solver.h" //Forward / Inverse Kinematics solver.
-#include "gcode.h"     //GCode interpreter
+#include "config.h"  //configuration
+#include "cpu_map.h" //pin map configuration
+#include "joint.h"   //Joint management
+#include "gcode.h"   //GCode interpreter
 // ---------------------------------------------------------------------------------------
 
 void setup_led();

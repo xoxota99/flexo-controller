@@ -41,12 +41,14 @@
 // Queue<char *> queue = Queue<char *>(INSTRUCTION_QUEUE_DEPTH);
 Stack<stack_entry_t> stack = Stack<stack_entry_t>(CONFIG_MAX_STACK_DEPTH);
 char buff[CONFIG_SHELL_MAX_INPUT];
-unit_t unit;
+
 int gcode_line_num = 0;
 
 bool bStopRequested = false;
 
 char *argv_list[CONFIG_SHELL_MAX_COMMAND_ARGS]; //reuse array of string pointers.
+
+movementMode_t movement_mode = ABSOLUTE;
 
 void setup_gcode(int bps)
 {
@@ -274,20 +276,20 @@ int parse_gcode(char *buf, char *argv[])
  * the travel simultaneously. 
  * - Movement occurs at the fastest possible speed and acceleration as set 
  * by the configuration for each joint.
- * - Coordinates are given in millimeters, angles are given in degrees, and 
- * these are absolute coordinates in the world frame.
+ * - Coordinates represent the target angle of each joint in degrees.
  * 
  * In the context of Flexo, the various axes map to:
- *    X: End effector X coordinate in the world frame.
- *    Y: End effector X coordinate in the world frame.
- *    Z: End effector Z coordinate in the world frame.
- *    A: End effector Yaw angle (in degrees)
- *    B: End effector Pitch angle (in degrees)
- *    C: End effector Roll angle (in degrees)
+ *    X: Joint 1 angle (in degrees)
+ *    Y: Joint 2 angle (in degrees)
+ *    Z: Joint 3 angle (in degrees)
+ *    U: Joint 4 angle (in degrees)
+ *    W: Joint 5 angle (in degrees)
+ *    V: Joint 6 angle (in degrees)
+ *    F: relative speed (between 0 and 1).
  * 
  * All Axis parameters are optional. (Though if you don't provide any at all, the robot will not move.)
  * 
- * Example: G0 X7 Y18 Z150 A12 B-50 C0
+ * Example: G0 X7 Y18 Z150 U12 V-50 W0
  **/
 
 int handleMove(int argc, char **argv)
@@ -299,66 +301,63 @@ int handleMove(int argc, char **argv)
     // joint when moving simultaneously with other joints. We need a mathematical approach
     // to determining realtime acceleration and top speed, on a per-command basis.
 
-    frame_t target = ee_frame;
-
+    double theta[MOTOR_COUNT];
+    uint8_t shouldMove = 0;
     float speed = 1.0;
-    bool bCh = false;
 
     //parse parameters
     for (int i = 1; i < argc; i++)
     {
-        if (argv[i][0] == 'X')
+        switch (argv[i][0])
         {
-            target.x = atof(&argv[i][1]);
-            bCh = true;
-        }
-        else if (argv[i][0] == 'Y')
-        {
-            target.y = atof(&argv[i][1]);
-            bCh = true;
-        }
-        else if (argv[i][0] == 'Z')
-        {
-            target.z = atof(&argv[i][1]);
-            bCh = true;
-        }
-        else if (argv[i][0] == 'A')
-        {
-            target.yaw = atof(&argv[i][1]);
-            bCh = true;
-        }
-        else if (argv[i][0] == 'B')
-        {
-            target.pitch = atof(&argv[i][1]);
-            bCh = true;
-        }
-        else if (argv[i][0] == 'C')
-        {
-            target.roll = atof(&argv[i][1]);
-            bCh = true;
-        }
-        else if (argv[i][0] == 'F')
-        {
-            speed = (float)atof(&argv[i][1]);
-            bCh = true;
-        }
-        else
-        {
-            //Unknown parameter. ignore it.
-            //TODO: Support multi-command mode (multiple GCode commands on a single line)
+        case 'X':
+            theta[0] = atof(&argv[i][1]);
+            shouldMove &= 1;
+            break;
+        case 'Y':
+            theta[1] = atof(&argv[i][1]);
+            shouldMove &= 1 << 1;
+            break;
+        case 'Z':
+            theta[2] = atof(&argv[i][1]);
+            shouldMove &= 1 << 2;
+            break;
+        case 'U':
+            theta[3] = atof(&argv[i][1]);
+            shouldMove &= 1 << 3;
+            break;
+        case 'V':
+            theta[4] = atof(&argv[i][1]);
+            shouldMove &= 1 << 4;
+            break;
+        case 'W':
+            theta[5] = atof(&argv[i][1]);
+            shouldMove &= 1 << 5;
+            break;
+        case 'F':
+            speed = atof(&argv[i][1]);
+            break;
+        default:
+            Logger::warn("Unrecognized parameter '%c'", argv[i][0]);
+            break;
         }
     }
-
-    if (bCh) //at least one parameter was provided
+    bool success = false;
+    if (shouldMove) //at least one parameter was provided
     {
-        if (unit == INCH)
+        switch (movement_mode)
         {
-            target.x *= INCHES_TO_MM;
-            target.y *= INCHES_TO_MM;
-            target.z *= INCHES_TO_MM;
+        case RELATIVE:
+            success = move_relative(shouldMove, theta, speed);
+            break;
+        default:
+            Logger::warn("movementMode is unrecognized. Using ABSOLUTE.");
+        case ABSOLUTE:
+            success = move_absolute(shouldMove, theta, speed);
+            break;
         }
 
-        if (move_linear(target, speed))
+        if (success)
         {
             // Serial.println("ok"); //TODO: Better response string.
             return SHELL_RET_SUCCESS;
@@ -367,6 +366,7 @@ int handleMove(int argc, char **argv)
         {
             Serial.print("// Error moving: ");
             Serial.println(errorNames[joint_movement_error]);
+            return SHELL_RET_FAILURE;
         }
     }
     else
@@ -377,84 +377,7 @@ int handleMove(int argc, char **argv)
     return SHELL_RET_FAILURE;
 }
 
-/**
- * G999 - Move individual joints by a specific angle in degrees, according to the current movement mode.
- * 
- * When the movement mode is RELATIVE, move each specified joint by an angle in degrees.
- * 
- * When the movement mode is ABSOLUTE, move each specified joint to an angle in degrees.
- * 
- * All parameters are optional.
- * Parameters:
- *    X Angle (in degrees) to move J1.
- *    Y Angle (in degrees) to move J2.
- *    Z Angle (in degrees) to move J3.
- *    A Angle (in degrees) to move J4.
- *    B Angle (in degrees) to move J5.
- *    C Angle (in degrees) to move J6.
- *    F Relative speed (from 0.0 to 0.1).
- **/
-
-int handleJog(int argc, char **argv)
-{
-    bool shouldMove[6];
-    double thetas[6], speed;
-    for (int i = 1; i < argc; i++)
-    {
-        switch (argv[i][0])
-        {
-        case 'X':
-            thetas[0] = atof(&argv[i][1]);
-            shouldMove[0] = true;
-            break;
-        case 'Y':
-            thetas[0] = atof(&argv[i][1]);
-            shouldMove[1] = true;
-            break;
-        case 'Z':
-            thetas[0] = atof(&argv[i][1]);
-            shouldMove[2] = true;
-            break;
-        case 'A':
-            thetas[0] = atof(&argv[i][1]);
-            shouldMove[3] = true;
-            break;
-        case 'B':
-            thetas[0] = atof(&argv[i][1]);
-            shouldMove[4] = true;
-            break;
-        case 'C':
-            thetas[0] = atof(&argv[i][1]);
-            shouldMove[5] = true;
-            break;
-        case 'F':
-            speed = atof(&argv[i][1]);
-        default:
-            break;
-        }
-    }
-    if (shouldMove[0] || shouldMove[1] || shouldMove[2] || shouldMove[3] || shouldMove[4] || shouldMove[5])
-    {
-        if (move_joints(shouldMove, thetas, speed))
-        {
-            Serial.println("ok // G999");
-            return SHELL_RET_SUCCESS;
-        }
-        else
-        {
-            Serial.println("ok // G999 - MOVEMENT FAILED.");
-            return SHELL_RET_FAILURE;
-        }
-    }
-    else
-    {
-        // No parameters. Do nothing.
-        Serial.println("ok // G999 - Movement aborted: No parameters provided.");
-        return SHELL_RET_FAILURE;
-    }
-}
-
-int handleRapidMove(int argc, char **argv) // G01
+int handleRapidMove(int argc, char **argv) // G00
 {
     return handleMove(argc, argv);
 }
@@ -468,48 +391,44 @@ int handleRapidMove(int argc, char **argv) // G01
  **/
 int handleControlledMove(int argc, char **argv) // G01
 {
-    //for now, just do the same thing as G01.
-
-    //TODO: Implement G01 correctly.
     return handleMove(argc, argv);
 }
 
 /**
- * Move in an Clockwise arc defined by the provided parameters:
+ * Move in an Clockwise arc, starting from the current position, according to the provided parameters:
  * 
- * Xnnn The position to move to on the X axis
- * Ynnn The position to move to on the Y axis
- * Znnn The position to move to on the Z axis
- * Annn Target yaw
- * Bnnn Target pitch
- * Cnnn Target roll
- * Innn The point in X space from the current X position to maintain a constant distance from
- * Jnnn The point in Y space from the current Y position to maintain a constant distance from
- * Knnn The point in Z space from the current Z position to maintain a constant distance from
- * Fnnn (optional) The relative speed (from 0.0 to 0.1) of the move between the starting point and ending point
+ * Parameters:
+ *    Xnnn the X coordinate of the arc centerpoint
+ *    Ynnn the Y coordinate of the arc centerpoint
+ *    Znnn the Z coordinate of the arc centerpoint
+ *    Innn the relative angle, in degrees, of the arc. (0-360).
+ *    Fnnn (optional) the relative speed (from 0.0 to 0.1) of the movement.
+ * 
  **/
+
+//NOTE: This is a very system level movement, and may require an IK Solution to implement.
+// Might be worth moving this up to the RPI layer.
 int handleCircleMoveCW(int argc, char **argv) // G02
 {
-    //TODO: Prerequisite: Support waypoint queueing.
+    //TODO: Prerequisite: Support waypoint queueing in motor controller.
     Serial.println("ok // G02 Not yet implemented.");
     return SHELL_RET_SUCCESS;
 }
 
 /**
- * Move in an Counter-Clockwise arc defined by the provided parameters:
+ * Move in an Counter-Clockwise arc, starting from the current position, according to the provided parameters:
  * 
  * Parameters:
- *    Xnnn The position to move to on the X axis
- *    Ynnn The position to move to on the Y axis
- *    Znnn The position to move to on the Z axis
- *    Annn Target yaw
- *    Bnnn Target pitch
- *    Cnnn Target roll
- *    Innn The point in X space from the current X position to maintain a constant distance from
- *    Jnnn The point in Y space from the current Y position to maintain a constant distance from
- *    Knnn The point in Z space from the current Z position to maintain a constant distance from
- *    Fnnn (optional) The relative speed (from 0.0 to 0.1) of the move between the starting point and ending point
+ *    Xnnn the X coordinate of the arc centerpoint
+ *    Ynnn the Y coordinate of the arc centerpoint
+ *    Znnn the Z coordinate of the arc centerpoint
+ *    Innn the relative angle, in degrees, of the arc. (0-360).
+ *    Fnnn (optional) the relative speed (from 0.0 to 0.1) of the movement.
+ * 
  **/
+
+//NOTE: This is a very system level movement, and may require an IK Solution to implement.
+// Might be worth moving this up to the RPI layer.
 int handleCircleMoveCCW(int argc, char **argv) // G03
 {
     Serial.println("ok // G03 Not yet implemented.");
@@ -530,12 +449,14 @@ int handleDwell(int argc, char **argv) // G04
     {
         if (argv[i][0] == 'P')
         {
-            delay_ms = atoi(&argv[i][1]);
+            delay_ms = atof(&argv[i][1]);
+            break;
         }
         else if (argv[i][0] == 'S')
         {
-            delay_ms = atoi(&argv[i][1]);
+            delay_ms = atof(&argv[i][1]);
             delay_ms *= 1000;
+            break;
         }
     }
 
@@ -547,6 +468,7 @@ int handleDwell(int argc, char **argv) // G04
 
     if (delay_ms == 0)
     {
+        //wait until any asynchronous movement completes.
         while (controller.isRunning()) //because the controller is interrupt driven, it's better to check this than moveState
         {
             delay(1);
@@ -558,20 +480,6 @@ int handleDwell(int argc, char **argv) // G04
     }
     Serial.println("ok //G04: Dwell complete.");
 
-    return SHELL_RET_SUCCESS;
-}
-
-int handleInch(int argc, char **argv) // G20
-{
-    unit = MM;
-    Serial.println("ok //G20: Unit set to INCHES");
-    return SHELL_RET_SUCCESS;
-}
-
-int handleMillimeters(int argc, char **argv) // G21
-{
-    unit = INCH;
-    Serial.println("ok //G21: Unit set to MILLIMETERS");
     return SHELL_RET_SUCCESS;
 }
 
@@ -737,7 +645,7 @@ int handleEmergencyStop(int argc, char **argv) // M112
 
 int handleGetPosition(int argc, char **argv) // M114
 {
-    Serial.printf("ok X:%8.4f Y:%8.4f Z:%8.4f U:%8.4f V:%8.4f W:%8.4f\n", ee_frame.x, ee_frame.y, ee_frame.z, ee_frame.yaw, ee_frame.pitch, ee_frame.roll);
+    Serial.printf("ok X:%8.4f Y:%8.4f Z:%8.4f U:%8.4f V:%8.4f W:%8.4f F:%8.4f\n", px, py, pz, pu, pv, pw, feed_rate);
     return SHELL_RET_SUCCESS;
 }
 
@@ -765,9 +673,8 @@ int handlePush(int argc, char **argv) // M120
     //ee_frame
     //units
     stack_entry_t e = {
-        movement_mode,
-        ee_frame,
-        unit};
+        movement_mode, px, py, pz, pu, pv, pw};
+
     if (stack.count() < CONFIG_MAX_STACK_DEPTH)
     {
 
@@ -796,13 +703,9 @@ int handlePop(int argc, char **argv) // M121
         }
         stack_entry_t e = stack.pop();
         movement_mode = e.movement_mode;
-        unit = e.unit;
+        double cur_pos[MOTOR_COUNT] = {e.px, e.py, e.pz, e.pu, e.pv, e.pw};
+        move_absolute(cur_pos);
 
-        move_linear(e.ee_frame);
-        while (controller.isRunning())
-        {
-            delay(1); //wait for motors to stop moving.
-        }
         Serial.println("ok //M121 State pop complete.");
         return SHELL_RET_SUCCESS;
     }
@@ -834,4 +737,61 @@ int handleSetHome(int argc, char **argv) // M306
     }
     Serial.println("ok //M306: New home set.");
     return SHELL_RET_SUCCESS;
+}
+
+/**
+ * Look for character /code/ in the buffer and read the float that immediately follows it.
+ * @return the value found.  If nothing is found, /val/ is returned.
+ * @input buf the buffer to search.
+ * @input code the character to look for.
+ * @input val the return value if /code/ is not found.
+ **/
+float parseNumber(char *buf, char code, float val)
+{
+    char *ptr = buf; // start at the beginning of buffer
+    while ((*ptr))   //until we hit the end of the string (NULL char)
+    {                // walk to the end
+        if (*ptr == code)
+        {                         // if you find code on your walk,
+            return atof(ptr + 1); // convert the digits that follow into a float and return it
+        }
+        ptr = strchr(ptr, ' ') + 1; // take a step from here to the letter after the next space
+    }
+    return val; // end reached, nothing found, return default val.
+}
+
+/**
+ * print the current position, feedrate, and absolute mode.
+ */
+void where()
+{
+    Serial.printf("X%6.3f", px);
+    Serial.printf("Y%6.3f", py);
+    Serial.printf("Z%6.3f", pz);
+    Serial.printf("U%6.3f", pu);
+    Serial.printf("V%6.3f", pv);
+    Serial.printf("W%6.3f", pw);
+    Serial.printf("F%6.3f", feed_rate);
+    Serial.println(movement_mode == ABSOLUTE ? "ABS" : "REL");
+}
+
+/**
+ * display helpful information
+ */
+void help()
+{
+    Serial.print(F("Flexo v"));
+    Serial.println(FIRMWARE_VERSION);
+    Serial.println(F("Commands:"));
+    Serial.println(F("\tG00/G01 [X/Y/Z/U/V/W(steps)] [F(feedrate)]; - linear move"));
+    Serial.println(F("\tG02 [X(steps)] [Y(steps)] [I(steps)] [J(steps)] [F(feedrate)]; - clockwise arc"));
+    Serial.println(F("\tG03 [X(steps)] [Y(steps)] [I(steps)] [J(steps)] [F(feedrate)]; - counter-clockwise arc"));
+    Serial.println(F("\tG04 P[seconds]; - delay"));
+    Serial.println(F("\tG90; - absolute mode"));
+    Serial.println(F("\tG91; - relative mode"));
+    Serial.println(F("\tG92 [X/Y/Z/U/V/W(steps)]; - change logical position"));
+    Serial.println(F("\tM18; - disable motors"));
+    Serial.println(F("\tM100; - this help message"));
+    Serial.println(F("\tM114; - report position and feedrate"));
+    Serial.println(F("\tAll commands must end with a newline."));
 }

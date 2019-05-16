@@ -52,17 +52,19 @@ void setup()
 
 void loop()
 {
-  if (runState != HALTED && runState != SHUTDOWN)
+  switch (runState)
   {
+  case STARTUP:
+  case CALIBRATING:
+  case READY:
     loop_joints();
-
-    // loop_endpoint();
     loop_gcode();
     loop_led();
-  }
-  else
-  {
-    //TODO: Set LED to blink pattern for shutdown.
+    break;
+  case HALTED:
+  case SHUTDOWN:
+  default:
+    break;
   }
 }
 

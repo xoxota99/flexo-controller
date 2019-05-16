@@ -43,15 +43,15 @@
 
 #include "flexo.h" // for Arduino headers
 
-typedef struct
-{
-  double x;
-  double y;
-  double z;
-  double yaw;
-  double pitch;
-  double roll;
-} frame_t; // cartesian / euler reference frame.
+// typedef struct
+// {
+//   double x;
+//   double y;
+//   double z;
+//   double yaw;
+//   double pitch;
+//   double roll;
+// } frame_t; // cartesian / euler reference frame.
 
 enum run_state_t
 {

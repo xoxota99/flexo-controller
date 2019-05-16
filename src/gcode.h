@@ -49,10 +49,10 @@
 
 #include "flexo.h"
 
-enum unit_t
+enum movementMode_t
 {
-  MM,
-  INCH
+  ABSOLUTE,
+  RELATIVE
 };
 
 /**
@@ -69,9 +69,10 @@ typedef struct
 typedef struct
 {
   movementMode_t movement_mode;
-  frame_t ee_frame;
-  unit_t unit;
+  double px, py, pz, pu, pv, pw;
 } stack_entry_t;
+
+extern movementMode_t movement_mode;
 
 /**
  * Set up serial communications and instruction Queue.
@@ -96,13 +97,10 @@ int handleControlledMove(int argc, char **argv); // G01
 int handleCircleMoveCW(int argc, char **argv);   // G02
 int handleCircleMoveCCW(int argc, char **argv);  // G03
 int handleDwell(int argc, char **argv);          // G04
-int handleInch(int argc, char **argv);           // G20
-int handleMillimeters(int argc, char **argv);    // G21
 int handleHome(int argc, char **argv);           // G28
 int handleAbsolute(int argc, char **argv);       // G90
 int handleRelative(int argc, char **argv);       // G91
 int handleSetPosition(int argc, char **argv);    // G92
-int handleJog(int argc, char **argv);            // G999
 
 // MCode
 /**
@@ -168,15 +166,12 @@ const command_t commands[] = {
     {handleCircleMoveCW, "G2"},
     {handleCircleMoveCCW, "G3"},
     {handleDwell, "G4"},
-    {handleInch, "G20"},
-    {handleMillimeters, "G21"},
     {handleHome, "G28"},
     {handleAbsolute, "G90"},
     {handleRelative, "G91"},
     {handleSetPosition, "G92"},
     {handleSetMinimum, "G161"},
     {handleSetMaximum, "G162"},
-    {handleJog, "G999"}, //TODO: Find a better GCODE than this.
     {handleStop, "M00"},
     {handleStop, "M0"},
     {handleEmergencyStop, "M112"},
@@ -187,5 +182,9 @@ const command_t commands[] = {
     {handlePush, "M120"},
     {handlePop, "M121"},
     {handleSetHome, "M306"}};
+
+float parseNumber(char *buf, char code, float val);
+void where();
+void help();
 
 #endif //__GCODE_H__
